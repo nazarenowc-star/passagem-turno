@@ -232,7 +232,7 @@
             .modal-header h3 { font-size: 16px; }
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="naza-stamp">Naza Auditoria</div>
@@ -1168,11 +1168,12 @@ async function criarAcessoCloud() {
     const password = document.getElementById('cloudPassword')?.value || '';
     if (!email || password.length < 6) { showToast('Informe e-mail e senha com pelo menos 6 caracteres.', 'error'); return; }
     atualizarStatusCloud('Criando acesso...', 'info');
-    const { data, error } = await client.auth.signUp({ email, password });
-    if (error) { showToast(error.message, 'error'); atualizarStatusCloud('Falha ao criar acesso.', 'error'); return; }
+    const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
+    if (error) { console.error('Supabase signUp error:', error); showToast(error.message, 'error'); atualizarStatusCloud('Falha ao criar acesso.', 'error'); return; }
     currentCloudUser = data.user || null;
     atualizarUsuarioCloudUI();
-    showToast('Acesso criado. Se o Supabase exigir confirmação, confira seu e-mail.', 'success');
+    const needsConfirm = !data.session;
+    showToast(needsConfirm ? 'Acesso criado. Confira o e-mail para confirmar a conta.' : 'Acesso criado e autenticado com sucesso.', 'success');
 }
 
 async function entrarCloud() {
