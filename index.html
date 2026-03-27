@@ -193,6 +193,52 @@
         .quick-actions { display:flex; gap: var(--space-3); flex-wrap:wrap; }
         .hint-strip { background: var(--sam-blue-light); color: var(--sam-blue); padding: 10px 14px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; margin-bottom: var(--space-5); }
 
+        /* Ajustes de contraste mantendo o front intacto */
+        .btn, .nav-item, .card-header h3, .mini-card h4, .page-title h2, .page-title p, .form-group label, th, td, .line-item strong, .line-item span, .form-hint { text-shadow: none; }
+        .report-summary { color: #ffffff; }
+        .report-summary p, .report-summary .btn { color: #ffffff; }
+        .report-summary .btn { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.12); }
+        .report-summary .btn:hover { background: rgba(255,255,255,0.2); }
+        .turno-badge { color: #1f2937; }
+        .status-done { background: #dcfce7; color: #14532d; }
+        .kanban-col.planned, .report-block.postergar { background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%); }
+        .kanban-col.monitor, .report-block.dia { background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%); }
+        .kanban-col.immediate, .report-block.imediato { background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%); }
+        .mini-card, .report-block, .card, .kpi-card, .oee-card { color: var(--gray-900); }
+        .mini-card strong, .report-block h3, .card-header h3, .oee-value, .kpi-value { color: var(--gray-900); }
+        /* Destaque maior em áreas de fundo esverdeado */
+        .report-summary h3, .report-summary p, .report-summary .quick-actions .btn,
+        .status-done, .gemba-badge, .kpi-card.success .kpi-header h3,
+        .kpi-card.success .kpi-value, .kpi-card.success .kpi-footer,
+        .turno-badge, .supervisor-details strong, .supervisor-details span {
+            font-weight: 700;
+        }
+        .gemba-badge { color: #052e16; background: #dcfce7; }
+        .kpi-card.success { background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); }
+        .kpi-card.success .kpi-header h3 { color: #166534; }
+        .kpi-card.success .kpi-value { color: #14532d; }
+        .kpi-card.success .kpi-footer { color: #166534; }
+        /* Velocímetros compactos do One Page */
+        .speedometer-card { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 14px; }
+        .speedometer {
+            --pct: 0deg;
+            width: 88px; height: 88px; border-radius: 50%; position: relative;
+            background: conic-gradient(var(--sam-blue) 0deg var(--pct), #e2e8f0 var(--pct) 360deg);
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+        }
+        .speedometer::before {
+            content: ''; position: absolute; inset: 11px; border-radius: 50%; background: #fff;
+            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+        }
+        .speedometer.warning { background: conic-gradient(var(--sam-orange) 0deg var(--pct), #e2e8f0 var(--pct) 360deg); }
+        .speedometer .speedometer-value {
+            position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1; color: var(--gray-900); text-align: center;
+        }
+        .speedometer .speedometer-value strong { font-size: 22px; line-height: 1; }
+        .speedometer .speedometer-value span { font-size: 10px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.04em; }
+        .speedometer-meta small { display: block; color: var(--gray-600); margin-top: 4px; }
+
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
         .main, .sidebar { -webkit-overflow-scrolling: touch; }
         .action-bar, .filter-group, .turno-header, .supervisor-info, .selector-actions { flex-wrap: wrap; }
@@ -337,8 +383,14 @@
                     </div>
                 </div>
                 <div class="report-side">
-                    <div class="mini-card"><h4>Corretivas abertas</h4><strong id="cardCorretivasAbertas">0</strong><span class="form-hint">Ordens correlacionadas ao turno</span></div>
-                    <div class="mini-card"><h4>Pendentes SAP/MES</h4><strong id="cardCorretivasPendentes">0</strong><span class="form-hint">Pendentes para priorização</span></div>
+                    <div class="mini-card speedometer-card">
+                        <div class="speedometer" id="speedometerAbertas"><div class="speedometer-value"><strong id="cardCorretivasAbertas">0</strong><span>ordens</span></div></div>
+                        <div class="speedometer-meta"><h4>Corretivas abertas</h4><span class="form-hint">Ordens correlacionadas ao turno</span><small id="speedometerAbertasPct">0% do total filtrado</small></div>
+                    </div>
+                    <div class="mini-card speedometer-card">
+                        <div class="speedometer warning" id="speedometerPendentes"><div class="speedometer-value"><strong id="cardCorretivasPendentes">0</strong><span>pend.</span></div></div>
+                        <div class="speedometer-meta"><h4>Pendentes SAP/MES</h4><span class="form-hint">Pendentes para priorização</span><small id="speedometerPendentesPct">0% do total filtrado</small></div>
+                    </div>
                 </div>
             </div>
             <div class="mini-card-grid">
@@ -780,12 +832,25 @@ function renderizarOnePageReport() {
     const setTxt = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
     setTxt('onePageNow', now.length); setTxt('onePageToday', today.length); setTxt('onePageLater', later.length); setTxt('onePageExecutadas', atv.length);
     setTxt('cardCorretivasAbertas', abertas.length); setTxt('cardCorretivasPendentes', pendentes.length);
+    atualizarVelocimetro('speedometerAbertas', 'speedometerAbertasPct', abertas.length, ordens.length || 0, 'abertas');
+    atualizarVelocimetro('speedometerPendentes', 'speedometerPendentesPct', pendentes.length, ordens.length || 0, 'pendentes');
     const resumoTxt = document.getElementById('onePageResumoTexto');
     if (resumoTxt) resumoTxt.textContent = `Supervisor: ${supervisorSelecionado || 'visão geral'} • Pendências abertas: ${pend.length} • Atividades executadas: ${atv.length} • Atualizado em ${new Date().toLocaleString('pt-BR')}.`;
     const ordensEl = document.getElementById('listaOrdensCorretivas');
     if (ordensEl) ordensEl.innerHTML = ordens.length ? ordens.slice(0,8).map(o => `<div class="line-item"><strong>${o.os} • ${o.tag}</strong><span>${o.area} • ${o.origem} • <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span></span><span>${o.descricao}</span></div>`).join('') : '<div class="line-item"><strong>Sem ordens no filtro atual</strong><span>Importe ou relacione ordens SAP/MES para este turno.</span></div>';
     const ativEl = document.getElementById('listaAtividadesRecentes');
     if (ativEl) ativEl.innerHTML = atv.length ? atv.slice(0,8).map(a => `<div class="line-item"><strong>${a.tag} • ${a.data}</strong><span>${a.area} • ${a.supervisor}</span><span>${a.descricao}</span></div>`).join('') : '<div class="line-item"><strong>Nenhuma atividade executada</strong><span>Cadastre as execuções do turno para gerar a visão consolidada.</span></div>';
+}
+
+
+function atualizarVelocimetro(gaugeId, legendaId, valor, total, label) {
+    const gauge = document.getElementById(gaugeId);
+    const legenda = document.getElementById(legendaId);
+    if (!gauge) return;
+    const pct = total > 0 ? Math.round((valor / total) * 100) : 0;
+    gauge.style.setProperty('--pct', `${Math.max(0, Math.min(100, pct)) * 3.6}deg`);
+    gauge.setAttribute('aria-label', `${label}: ${valor} de ${total}`);
+    if (legenda) legenda.textContent = `${pct}% do total filtrado (${valor}/${total || 0})`;
 }
 
 function gerarRelatorioPublico() {
