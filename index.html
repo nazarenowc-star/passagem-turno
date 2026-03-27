@@ -161,6 +161,38 @@
         .selector-item small { display: block; color: var(--gray-500); margin-top: 4px; }
         .selector-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 
+
+        .priority-low { color: var(--gray-600); }
+        .access-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:var(--gray-50); border:1px solid var(--gray-200); font-size:12px; font-weight:700; color:var(--gray-700); }
+        .mini-card-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+        .mini-card { background:white; border:1px solid var(--gray-200); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: var(--shadow-sm); }
+        .mini-card h4 { font-size:12px; text-transform:uppercase; color:var(--gray-500); margin-bottom:6px; }
+        .mini-card strong { font-size:28px; display:block; color:var(--gray-800); line-height:1; }
+        .report-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); margin-bottom: var(--space-5); }
+        .report-block { background:white; border:1px solid var(--gray-200); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--shadow-sm); }
+        .report-block.imediato { border-top: 4px solid var(--sam-red); }
+        .report-block.dia { border-top: 4px solid var(--sam-orange); }
+        .report-block.postergar { border-top: 4px solid var(--sam-blue); }
+        .report-block h3 { font-size:16px; margin-bottom: var(--space-3); }
+        .report-block ul { padding-left: 18px; display:grid; gap:8px; }
+        .report-header-card { display:grid; grid-template-columns: 2fr 1fr; gap: var(--space-5); margin-bottom: var(--space-5); }
+        .report-summary { background: linear-gradient(135deg, #0a5d87 0%, #0f7db1 100%); color:white; border-radius: var(--radius-lg); padding: var(--space-5); }
+        .report-summary h3 { font-size:20px; margin-bottom:8px; }
+        .report-summary p { opacity:0.92; font-size:13px; }
+        .report-side { display:grid; gap: var(--space-4); }
+        .card-list { display:grid; gap:10px; }
+        .card-list .line-item { background:var(--gray-50); border:1px solid var(--gray-200); border-radius: var(--radius-md); padding:10px 12px; }
+        .line-item strong { display:block; font-size:13px; }
+        .line-item span { display:block; font-size:12px; color:var(--gray-600); }
+        .status-pill { display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+        .status-open { background: var(--sam-red-light); color: var(--sam-red); }
+        .status-progress { background: var(--sam-orange-light); color: var(--sam-orange); }
+        .status-done { background: var(--sam-green-light); color: var(--sam-green); }
+        .status-postpone { background: var(--sam-blue-light); color: var(--sam-blue); }
+        .section-stack { display:grid; gap: var(--space-5); }
+        .quick-actions { display:flex; gap: var(--space-3); flex-wrap:wrap; }
+        .hint-strip { background: var(--sam-blue-light); color: var(--sam-blue); padding: 10px 14px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; margin-bottom: var(--space-5); }
+
         html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
         .main, .sidebar { -webkit-overflow-scrolling: touch; }
         .action-bar, .filter-group, .turno-header, .supervisor-info, .selector-actions { flex-wrap: wrap; }
@@ -200,7 +232,7 @@
             .page-title p { font-size: 12px; }
             .action-bar { display: grid; grid-template-columns: 1fr; }
             .action-bar .btn { width: 100%; }
-            .kpi-grid, .main-grid { grid-template-columns: 1fr; }
+            .kpi-grid, .main-grid, .mini-card-grid, .report-grid, .report-header-card { grid-template-columns: 1fr; }
             .form-grid { grid-template-columns: 1fr; }
             .form-group.full-width { grid-column: span 1; }
             .filter-group { grid-template-columns: 1fr 1fr; }
@@ -225,6 +257,7 @@
             .supervisor-info { align-items: center; }
             .turno-stats { grid-template-columns: 1fr 1fr; }
             .filter-group { grid-template-columns: 1fr; }
+            .mini-card-grid { grid-template-columns: 1fr 1fr; }
             .search-box { padding: 10px 12px; }
             .filter-select { font-size: 14px; }
             .kpi-value { font-size: 30px; }
@@ -233,6 +266,8 @@
         }
     </style>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="naza-stamp">Naza Auditoria</div>
@@ -247,6 +282,8 @@
         </div>
         <div class="nav-menu">
             <button class="nav-item active" data-screen="dashboard">📊 Dashboard Executivo</button>
+            <button class="nav-item" data-screen="onepage">🎯 One Page Report</button>
+            <button class="nav-item" data-screen="atividades">✅ Atividades Executadas</button>
             <button class="nav-item" data-screen="sbar">📋 Protocolo SBAR</button>
             <button class="nav-item" data-screen="gemba">👣 Gemba Walk</button>
             <button class="nav-item" data-screen="kanban">📌 T-Card / Kanban</button>
@@ -258,7 +295,7 @@
     </aside>
     <main class="main">
         <div class="top-bar"><div class="page-title"><h2 id="pageTitle">Dashboard Executivo</h2><p id="pageDate">19 de março de 2026 • 14:30 • Atualizado em tempo real</p></div>
-        <div class="action-bar"><button class="btn" onclick="toggleSidebar()">☰ Menu</button><button class="btn btn-primary" onclick="openModal('novaPendencia')">+ Nova Pendência</button><button class="btn" onclick="gerarResumo()">📄 Gerar Resumo SBAR</button><button class="btn" onclick="openModal('cloudAccess')">☁️ Acesso</button><button class="btn" onclick="sincronizarAgora()">🔄 Sincronizar</button></div></div>
+        <div class="action-bar"><button class="btn" onclick="toggleSidebar()">☰ Menu</button><button class="btn btn-primary" onclick="openModal('novaPendencia')">+ Nova Pendência</button><button class="btn" onclick="openModal('novaAtividade')">+ Atividade Executada</button><button class="btn" onclick="gerarResumo()">📄 Gerar Resumo SBAR</button><button class="btn" onclick="gerarRelatorioPublico()">📤 Relatório do Turno</button><button class="btn" onclick="openModal('cloudAccess')">☁️ Acesso</button><button class="btn" onclick="sincronizarAgora()">🔄 Sincronizar</button><span class="access-chip" id="accessChip">Perfil: Leitura</span></div></div>
         
         <div class="search-section">
             <div class="search-box"><span>🔍</span><input type="text" placeholder="Pesquisar por TAG, equipamento..." id="globalSearch"></div>
@@ -267,7 +304,11 @@
                 <select class="filter-select" id="subareaFilterMain"><option value="">Subárea Mina</option></select>
                 <select class="filter-select" id="sistemaFilterMain"><option value="">Todos os Sistemas</option></select>
                 <select class="filter-select" id="equipFilterMain"><option value="">Todos os Equipamentos</option></select>
-                <select class="filter-select" id="prioridadeFilterMain"><option value="">Prioridade</option><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium">Médio</option></select>
+                <select class="filter-select" id="prioridadeFilterMain"><option value="">Prioridade</option><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium">Médio</option><option value="low">Baixo</option></select>
+                <select class="filter-select" id="criticidadeOperacionalFilter"><option value="">Janela de Ataque</option><option value="imediato">Agir de imediato</option><option value="dia">Fazer ao longo do dia</option><option value="postergar">Pode postergar</option></select>
+                <select class="filter-select" id="turnoFilterMain"><option value="">Todos os Turnos</option></select>
+                <select class="filter-select" id="letraFilterMain"><option value="">Todas as Letras</option></select>
+                <select class="filter-select" id="supervisaoFilterMain"><option value="">Toda a Supervisão</option></select>
                 <div class="date-filter"><span>📅</span><input type="date" id="dataInicialFilterMain" title="Data Inicial"><span style="font-size:12px;color:var(--gray-500)">até</span><input type="date" id="dataFinalFilterMain" title="Data Final"></div>
             </div>
         </div>
@@ -283,7 +324,54 @@
             <div class="card"><div class="card-header"><h3>Matriz de Escalação</h3></div><div class="matrix-grid"><div class="matrix-level level1" onclick="abrirEscalacao('nivel1')"><h5>Nível 1 - Supervisor</h5><div class="matrix-time">12h</div><div class="matrix-responsible" id="nivel1Responsavel">Marcelo Oliveira</div></div><div class="matrix-level level2" onclick="abrirEscalacao('nivel2')"><h5>Nível 2 - Coordenação</h5><div class="matrix-time">24h</div><div class="matrix-responsible">Carlos Santos</div></div><div class="matrix-level level3" onclick="abrirEscalacao('nivel3')"><h5>Nível 3 - Gerência</h5><div class="matrix-time">48h</div><div class="matrix-responsible">Ana Rodrigues</div></div></div></div>
         </div>
 
-        <div class="screen" id="screen-sbar"><div class="card"><div class="card-header"><h3>Protocolo SBAR - Todos os Registros</h3><button class="btn btn-primary" onclick="openModal('novaPendencia')">+ Novo SBAR</button></div><div class="table-container"><table><thead><tr><th>Data/Hora</th><th>TAG</th><th>Situação</th><th>Prioridade</th><th>Status</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="sbarTableBody"></tbody></table></div></div></div>
+        
+        <div class="screen" id="screen-onepage">
+            <div class="report-header-card">
+                <div class="report-summary">
+                    <h3>One Page Report do Supervisor</h3>
+                    <p id="onePageResumoTexto">Visão única para saber o que atacar agora, o que fazer ao longo do dia e o que pode ser postergado com controle.</p>
+                    <div class="quick-actions" style="margin-top:16px;">
+                        <button class="btn" onclick="filtrarPorCriticidadeOperacional('imediato')">Ver imediatas</button>
+                        <button class="btn" onclick="filtrarPorCriticidadeOperacional('dia')">Ver hoje</button>
+                        <button class="btn" onclick="filtrarPorCriticidadeOperacional('postergar')">Ver postergáveis</button>
+                    </div>
+                </div>
+                <div class="report-side">
+                    <div class="mini-card"><h4>Corretivas abertas</h4><strong id="cardCorretivasAbertas">0</strong><span class="form-hint">Ordens correlacionadas ao turno</span></div>
+                    <div class="mini-card"><h4>Pendentes SAP/MES</h4><strong id="cardCorretivasPendentes">0</strong><span class="form-hint">Pendentes para priorização</span></div>
+                </div>
+            </div>
+            <div class="mini-card-grid">
+                <div class="mini-card"><h4>Agir de imediato</h4><strong id="onePageNow">0</strong></div>
+                <div class="mini-card"><h4>Ao longo do dia</h4><strong id="onePageToday">0</strong></div>
+                <div class="mini-card"><h4>Pode postergar</h4><strong id="onePageLater">0</strong></div>
+                <div class="mini-card"><h4>Executadas no turno</h4><strong id="onePageExecutadas">0</strong></div>
+            </div>
+            <div class="report-grid">
+                <div class="report-block imediato"><h3>Atacar agora</h3><ul id="onePageListaAgora"></ul></div>
+                <div class="report-block dia"><h3>Fazer ao longo do dia</h3><ul id="onePageListaDia"></ul></div>
+                <div class="report-block postergar"><h3>Pode postergar</h3><ul id="onePageListaPostergar"></ul></div>
+            </div>
+            <div class="main-grid">
+                <div class="card"><div class="card-header"><h3>Ordens corretivas abertas e pendentes</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn" type="button" onclick="importarOrdensSapMes()">📥 Importar SAP/MES</button><span class="badge">SAP / MES</span></div></div><div class="card-list" id="listaOrdensCorretivas"></div></div>
+                <div class="card"><div class="card-header"><h3>Últimas atividades executadas</h3><span class="badge">Turno</span></div><div class="card-list" id="listaAtividadesRecentes"></div></div>
+            </div>
+        </div>
+
+        <div class="screen" id="screen-atividades">
+            <div class="hint-strip">Cadastro e edição rápida de atividades executadas no turno, com rastreabilidade por área, letra, TAG, supervisor e ordem.</div>
+            <div class="card">
+                <div class="card-header"><h3>Atividades Executadas</h3><button class="btn btn-primary" onclick="openModal('novaAtividade')">+ Registrar atividade</button></div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Data/Hora</th><th>Área</th><th>Letra</th><th>Turno</th><th>Supervisor</th><th>TAG</th><th>Atividade</th><th>Criticidade</th><th>O.S.</th><th>Ações</th></tr></thead>
+                        <tbody id="atividadesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+<div class="screen" id="screen-sbar"><div class="card"><div class="card-header"><h3>Protocolo SBAR - Todos os Registros</h3><button class="btn btn-primary" onclick="openModal('novaPendencia')">+ Novo SBAR</button></div><div class="table-container"><table><thead><tr><th>Data/Hora</th><th>TAG</th><th>Situação</th><th>Prioridade</th><th>Status</th><th>Responsável</th><th>Ações</th></tr></thead><tbody id="sbarTableBody"></tbody></table></div></div></div>
 
         <div class="screen" id="screen-kanban"><div class="kanban-grid"><div class="kanban-col immediate"><div class="kanban-header"><h4>🔴 Ação Imediata</h4><span class="kanban-count" id="kanbanImediataCount">0</span></div><div id="kanbanImediataList"></div></div><div class="kanban-col monitor"><div class="kanban-header"><h4>🟡 Monitoramento</h4><span class="kanban-count" id="kanbanMonitorCount">0</span></div><div id="kanbanMonitorList"></div></div><div class="kanban-col planned"><div class="kanban-header"><h4>🔵 Programado</h4><span class="kanban-count" id="kanbanProgramadoCount">0</span></div><div id="kanbanProgramadoList"></div></div></div></div>
 
@@ -307,7 +395,14 @@
 <div class="modal" id="modalDetalhe"><div class="modal-content"><div class="modal-header"><h3 id="detalheTitulo">Detalhes</h3><button class="modal-close" onclick="closeModal('detalhe')">×</button></div><div id="detalheConteudo" class="resumo-content"></div></div></div>
 
 
-<div class="modal" id="modalCloudAccess"><div class="modal-content"><div class="modal-header"><h3>Acesso à Nuvem</h3><button class="modal-close" onclick="closeModal('cloudAccess')">×</button></div><div class="form-grid"><div class="form-group full-width"><label>Status</label><div id="cloudStatusBox" style="padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-md);background:var(--gray-50);font-size:14px;">Não conectado</div></div><div class="form-group"><label>E-mail</label><input type="email" class="form-control" id="cloudEmail" placeholder="seuemail@empresa.com"></div><div class="form-group"><label>Senha</label><input type="password" class="form-control" id="cloudPassword" placeholder="Mínimo 6 caracteres"></div><div class="form-group full-width"><label>Usuário logado</label><input type="text" class="form-control" id="cloudUserInfo" disabled placeholder="Nenhum usuário autenticado"></div></div><div class="selector-actions"><button class="btn" type="button" onclick="criarAcessoCloud()">Criar acesso</button><button class="btn btn-primary" type="button" onclick="entrarCloud()">Entrar</button><button class="btn" type="button" onclick="baixarDaNuvem()">Baixar</button><button class="btn" type="button" onclick="enviarParaNuvem()">Enviar</button><button class="btn" type="button" onclick="sairCloud()">Sair</button></div><div class="form-hint" style="margin-top:10px;">Use a mesma lógica do outro sistema: cada pessoa cria o próprio acesso e sincroniza os registros na nuvem.</div></div></div>
+
+<div class="modal" id="modalNovaAtividade"><div class="modal-content"><div class="modal-header"><h3>Nova Atividade Executada</h3><button class="modal-close" onclick="closeModal('novaAtividade')">×</button></div><form onsubmit="salvarAtividade(event)"><div class="form-grid"><div class="form-group"><label>Data</label><input type="date" class="form-control" id="atividadeData" required></div><div class="form-group"><label>Hora</label><input type="time" class="form-control" id="atividadeHora" required></div><div class="form-group"><label>Turno</label><input type="text" class="form-control" id="atividadeTurno" list="turnosSugeridos" required></div><div class="form-group"><label>Supervisor / Preposto</label><input type="text" class="form-control" id="atividadeSupervisor" list="supervisoresSugeridos" required></div><div class="form-group"><label>Letra</label><input type="text" class="form-control" id="atividadeLetra" list="letrasSugeridas" maxlength="2"></div><div class="form-group"><label>Área</label><select class="form-control" id="atividadeArea" onchange="carregarEquipamentosAtividade()" required><option value="">Selecione</option></select></div><div class="form-group"><label>TAG / Equipamento</label><select class="form-control" id="atividadeTag" required><option value="">Selecione a área primeiro</option></select></div><div class="form-group"><label>Janela de Ataque</label><select class="form-control" id="atividadeCriticidade"><option value="imediato">Atacado de imediato</option><option value="dia">Executado ao longo do dia</option><option value="postergar">Pôde ser postergado</option></select></div><div class="form-group"><label>O.S. / SAP</label><input type="text" class="form-control" id="atividadeOs" placeholder="Ex.: 3002256342"></div><div class="form-group full-width"><label>Atividade executada</label><textarea class="form-control" id="atividadeDescricao" required placeholder="Descreva a atividade realizada"></textarea></div><div class="form-group full-width"><label>Resultado / observação</label><textarea class="form-control" id="atividadeResultado" placeholder="Resultado final, pendência remanescente, condição liberada"></textarea></div></div><div class="selector-actions"><button class="btn" type="button" onclick="closeModal('novaAtividade')">Cancelar</button><button class="btn btn-primary" type="submit">Salvar atividade</button></div></form></div></div>
+
+<div class="modal" id="modalEditarRegistro"><div class="modal-content"><div class="modal-header"><h3>Editar Registro</h3><button class="modal-close" onclick="closeModal('editarRegistro')">×</button></div><form onsubmit="salvarEdicaoRegistro(event)"><input type="hidden" id="editRegistroTipo"><input type="hidden" id="editRegistroId"><div class="form-grid"><div class="form-group"><label>Status</label><select class="form-control" id="editStatus"><option value="Aberto">Aberto</option><option value="Em andamento">Em andamento</option><option value="Monitoramento">Monitoramento</option><option value="Programado">Programado</option><option value="Concluído">Concluído</option></select></div><div class="form-group"><label>Prioridade / Criticidade</label><select class="form-control" id="editPrioridade"><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium">Médio</option><option value="low">Baixo</option><option value="imediato">Atacar já</option><option value="dia">Ao longo do dia</option><option value="postergar">Postergar</option></select></div><div class="form-group full-width"><label>Resumo / Situação</label><textarea class="form-control" id="editSituacao" required></textarea></div><div class="form-group full-width"><label>Recomendação / Resultado</label><textarea class="form-control" id="editRecomendacao"></textarea></div></div><div class="selector-actions"><button class="btn" type="button" onclick="closeModal('editarRegistro')">Cancelar</button><button class="btn btn-primary" type="submit">Salvar edição</button></div></form></div></div>
+
+<div class="modal" id="modalRelatorio"><div class="modal-content"><div class="modal-header"><h3>Relatório para envio</h3><button class="modal-close" onclick="closeModal('relatorio')">×</button></div><div class="resumo-content" id="relatorioConteudo"></div><div class="selector-actions"><button class="btn" type="button" onclick="exportarRelatorioExcel()">📊 Excel</button><button class="btn" type="button" onclick="exportarRelatorioPDF()">📄 PDF</button><button class="btn" type="button" onclick="copiarRelatorio()">📋 Copiar</button><button class="btn" type="button" onclick="closeModal('relatorio')">Fechar</button></div></div></div>
+
+<div class="modal" id="modalCloudAccess"><div class="modal-content"><div class="modal-header"><h3>Acesso à Nuvem</h3><button class="modal-close" onclick="closeModal('cloudAccess')">×</button></div><div class="form-grid"><div class="form-group full-width"><label>Status</label><div id="cloudStatusBox" style="padding:10px 14px;border:1px solid var(--gray-300);border-radius:var(--radius-md);background:var(--gray-50);font-size:14px;">Não conectado</div></div><div class="form-group"><label>E-mail</label><input type="email" class="form-control" id="cloudEmail" placeholder="seuemail@empresa.com"></div><div class="form-group"><label>Senha</label><input type="password" class="form-control" id="cloudPassword" placeholder="Mínimo 6 caracteres"></div><div class="form-group"><label>Perfil de acesso</label><select class="form-control" id="cloudRole"><option value="read">Leitura</option><option value="edit">Edição</option><option value="supervisor">Supervisor / Preposto</option></select></div><div class="form-group full-width"><label>Usuário logado</label><input type="text" class="form-control" id="cloudUserInfo" disabled placeholder="Nenhum usuário autenticado"></div></div><div class="selector-actions"><button class="btn" type="button" onclick="criarAcessoCloud()">Criar acesso</button><button class="btn btn-primary" type="button" onclick="entrarCloud()">Entrar</button><button class="btn" type="button" onclick="baixarDaNuvem()">Baixar</button><button class="btn" type="button" onclick="enviarParaNuvem()">Enviar</button><button class="btn" type="button" onclick="sairCloud()">Sair</button></div><div class="form-hint" style="margin-top:10px;">Use a mesma lógica do outro sistema: cada pessoa cria o próprio acesso e sincroniza os registros na nuvem.</div><div class="form-hint" style="margin-top:6px;">Perfis de edição e supervisor podem ser limitados por e-mail autorizado na configuração do sistema.</div></div></div>
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -444,13 +539,349 @@ function enriquecerPendencia(item) {
         periodoInicial: item.periodoInicial || new Date().toISOString().slice(0,10),
         periodoFinal: item.periodoFinal || new Date().toISOString().slice(0,10),
         letra: item.letra || '',
-        tipoRegistro: item.tipoRegistro || 'Pendência'
+        tipoRegistro: item.tipoRegistro || 'Pendência',
+        criticidadeOperacional: item.criticidadeOperacional || mapearCriticidadeOperacional(item)
     };
+}
+
+
+function mapearCriticidadeOperacional(item) {
+    const prioridade = (item.prioridade || '').toLowerCase();
+    const status = (item.status || '').toLowerCase();
+    if (prioridade === 'critical') return 'imediato';
+    if (prioridade === 'high' || status.includes('andamento') || status.includes('monitor')) return 'dia';
+    return 'postergar';
+}
+
+function getCriticidadeLabel(valor) {
+    return valor === 'imediato' ? 'Agir agora' : valor === 'dia' ? 'Ao longo do dia' : 'Pode postergar';
+}
+
+function getStatusClass(status) {
+    const s = (status || '').toLowerCase();
+    if (s.includes('conclu')) return 'status-done';
+    if (s.includes('andamento') || s.includes('monitor')) return 'status-progress';
+    if (s.includes('post')) return 'status-postpone';
+    return 'status-open';
+}
+
+function refreshAll() {
+    renderSupervisorSelector();
+    sincronizarCardSupervisor();
+    atualizarDashboard();
+    renderizarSBAR();
+    renderizarKanban();
+    renderizarGemba();
+    renderizarHistorico();
+    renderizarDocumentos();
+    renderizarOEE();
+    renderizarEscalacao();
+    carregarFiltrosDinamicos();
+    renderizarAtividades();
+    renderizarOnePageReport();
+    atualizarAcessoUI();
+}
+
+function setAccessProfile(role) {
+    const mapa = {
+        read: { role: 'read', canEdit: false, canSwitchSupervisor: false, label: 'Leitura' },
+        edit: { role: 'edit', canEdit: true, canSwitchSupervisor: false, label: 'Edição' },
+        supervisor: { role: 'supervisor', canEdit: true, canSwitchSupervisor: true, label: 'Supervisor / Preposto' }
+    };
+    accessProfile = mapa[role] || mapa.read;
+    try { localStorage.setItem('naza_access_profile_v1', JSON.stringify(accessProfile)); } catch(e) {}
+    atualizarAcessoUI();
+}
+
+function restaurarAcessoLocal() {
+    try {
+        const raw = localStorage.getItem('naza_access_profile_v1');
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved?.role) setAccessProfile(saved.role);
+    } catch(e) {}
+}
+
+function atualizarAcessoUI() {
+    const chip = document.getElementById('accessChip');
+    if (chip) chip.textContent = `Perfil: ${accessProfile.label}`;
+    const roleSel = document.getElementById('cloudRole');
+    if (roleSel) roleSel.value = accessProfile.role;
+}
+
+function podeEditarRegistro(item) {
+    if (!accessProfile.canEdit) {
+        showToast('Seu acesso atual é somente leitura.', 'error');
+        return false;
+    }
+    const dataRef = parseDataFlex(item?.periodoFinal || item?.periodoInicial || item?.dataISO || item?.data);
+    if (accessProfile.role !== 'supervisor' && dataRef) {
+        const horas = Math.abs(Date.now() - dataRef.getTime()) / 36e5;
+        if (horas > 48) {
+            showToast('Edição bloqueada: registros acima de 48 horas exigem perfil de supervisor / preposto.', 'error');
+            return false;
+        }
+    }
+    return true;
+}
+
+function carregarFiltrosDinamicos() {
+    const turnoEl = document.getElementById('turnoFilterMain');
+    const letraEl = document.getElementById('letraFilterMain');
+    const supervisorEl = document.getElementById('supervisaoFilterMain');
+    if (turnoEl) {
+        const atual = turnoEl.value;
+        const turnos = Array.from(new Set([...pendencias, ...atividadesExecutadas].map(i => i.turno).filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+        turnoEl.innerHTML = '<option value="">Todos os Turnos</option>' + turnos.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (turnos.includes(atual)) turnoEl.value = atual;
+    }
+    if (letraEl) {
+        const atual = letraEl.value;
+        const letras = Array.from(new Set([...pendencias, ...atividadesExecutadas].map(i => i.letra).filter(Boolean))).sort();
+        letraEl.innerHTML = '<option value="">Todas as Letras</option>' + letras.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (letras.includes(atual)) letraEl.value = atual;
+    }
+    if (supervisorEl) {
+        const atual = supervisorEl.value;
+        const nomes = getSupervisoresDisponiveis();
+        supervisorEl.innerHTML = '<option value="">Toda a Supervisão</option>' + nomes.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (nomes.includes(atual)) supervisorEl.value = atual;
+    }
+}
+
+function filtrarAtividades() {
+    let itens = atividadesExecutadas.slice();
+    const areaPrincipal = document.getElementById("areaFilterMain")?.value;
+    const subarea = document.getElementById("subareaFilterMain")?.value;
+    const equip = document.getElementById("equipFilterMain")?.value;
+    const turno = document.getElementById("turnoFilterMain")?.value;
+    const letra = document.getElementById("letraFilterMain")?.value;
+    const supervisao = document.getElementById("supervisaoFilterMain")?.value || supervisorSelecionado;
+    const criticidade = document.getElementById("criticidadeOperacionalFilter")?.value;
+    const dataInicial = document.getElementById("dataInicialFilterMain")?.value;
+    const dataFinal = document.getElementById("dataFinalFilterMain")?.value;
+    const search = (document.getElementById("globalSearch")?.value || '').toLowerCase();
+    if(areaPrincipal) itens = itens.filter(a => obterContextoArea(a.area || '').areaPrincipal === areaPrincipal);
+    if(subarea) itens = itens.filter(a => obterContextoArea(a.area || '').subarea === subarea);
+    if(equip) itens = itens.filter(a => a.tag === equip);
+    if(turno) itens = itens.filter(a => (a.turno || '') === turno);
+    if(letra) itens = itens.filter(a => (a.letra || '') === letra);
+    if(supervisao) itens = itens.filter(a => (a.supervisor || '').trim() === supervisao);
+    if(criticidade) itens = itens.filter(a => (a.criticidade || mapearCriticidadeOperacional(a)) === criticidade);
+    if(dataInicial || dataFinal) itens = itens.filter(a => filtrarPorPeriodoRegistro({ periodoInicial: a.dataISO || a.data, periodoFinal: a.dataISO || a.data }, dataInicial, dataFinal));
+    if(search) itens = itens.filter(a => [a.tag, a.descricao, a.resultado, a.supervisor, a.os].join(' ').toLowerCase().includes(search));
+    return itens;
+}
+
+function carregarEquipamentosAtividade() {
+    const area = document.getElementById("atividadeArea")?.value;
+    const select = document.getElementById("atividadeTag");
+    if (!select) return;
+    if(area && equipamentosPorArea[area]) {
+        select.innerHTML = '<option value="">Selecione um equipamento</option>' + equipamentosPorArea[area].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(eq => `<option value="${eq}">${eq}</option>`).join('');
+    } else {
+        select.innerHTML = '<option value="">Selecione a área primeiro</option>';
+    }
+}
+
+function prepararModalNovaAtividade() {
+    const hoje = new Date();
+    const dataEl = document.getElementById('atividadeData');
+    const horaEl = document.getElementById('atividadeHora');
+    const turnoEl = document.getElementById('atividadeTurno');
+    const supEl = document.getElementById('atividadeSupervisor');
+    const letraEl = document.getElementById('atividadeLetra');
+    const areaEl = document.getElementById('atividadeArea');
+    if (dataEl && !dataEl.value) dataEl.value = hoje.toISOString().slice(0,10);
+    if (horaEl && !horaEl.value) horaEl.value = hoje.toTimeString().slice(0,5);
+    if (turnoEl && !turnoEl.value) turnoEl.value = turnoAtual.horario.replace(/ - /g, ' às ');
+    if (supEl && !supEl.value) supEl.value = turnoAtual.supervisor;
+    if (letraEl && !letraEl.value) letraEl.value = (turnoAtual.nome || '').replace('Turno ','').trim();
+    if (areaEl && !areaEl.options.length) {
+        areaEl.innerHTML = '<option value="">Selecione</option>' + Object.keys(equipamentosPorArea).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(area => `<option value="${area}">${area}</option>`).join('');
+    }
+    carregarEquipamentosAtividade();
+}
+
+function salvarAtividade(event) {
+    event.preventDefault();
+    if (!accessProfile.canEdit) { showToast('Somente perfis de edição ou supervisor podem registrar atividades.', 'error'); return; }
+    const data = document.getElementById('atividadeData').value;
+    const hora = document.getElementById('atividadeHora').value || '00:00';
+    const nova = {
+        id: `ATV-${Date.now()}`,
+        data: `${data.split('-').reverse().join('/')} ${hora}`,
+        dataISO: `${data}T${hora}:00`,
+        area: document.getElementById('atividadeArea').value,
+        turno: document.getElementById('atividadeTurno').value.trim(),
+        letra: (document.getElementById('atividadeLetra').value || '').trim().toUpperCase(),
+        supervisor: document.getElementById('atividadeSupervisor').value.trim(),
+        tag: document.getElementById('atividadeTag').value,
+        criticidade: document.getElementById('atividadeCriticidade').value,
+        descricao: document.getElementById('atividadeDescricao').value.trim(),
+        resultado: document.getElementById('atividadeResultado').value.trim(),
+        os: document.getElementById('atividadeOs').value.trim(),
+        status: 'Concluído'
+    };
+    atividadesExecutadas.unshift(nova);
+    adicionarMemoriaTurno(nova.turno, nova.supervisor, nova.letra);
+    if (nova.os) {
+        ordensCorretivas.unshift({ id: `OSLINK-${Date.now()}`, os: nova.os, area: nova.area, tag: nova.tag, status: 'Concluída', origem: 'SAP', supervisor: nova.supervisor, descricao: nova.descricao });
+    }
+    registrarMudancaLocal();
+    closeModal('novaAtividade');
+    showToast(`Atividade ${nova.tag} registrada com sucesso.`, 'success');
+    event.target.reset();
+    prepararModalNovaAtividade();
+    refreshAll();
+}
+
+function renderizarAtividades() {
+    const tbody = document.getElementById('atividadesTableBody');
+    if (!tbody) return;
+    const itens = filtrarAtividades();
+    tbody.innerHTML = itens.map(a => `
+        <tr onclick="abrirDetalheAtividade('${a.id}')">
+            <td>${a.data}</td>
+            <td>${a.area}</td>
+            <td>${a.letra || '-'}</td>
+            <td>${a.turno || '-'}</td>
+            <td>${a.supervisor || '-'}</td>
+            <td><strong>${a.tag}</strong></td>
+            <td>${(a.descricao || '').substring(0, 60)}</td>
+            <td><span class="status-pill ${a.criticidade==='imediato'?'status-open':a.criticidade==='dia'?'status-progress':'status-postpone'}">${getCriticidadeLabel(a.criticidade)}</span></td>
+            <td>${a.os || '-'}</td>
+            <td><button class="btn" style="padding:4px 8px" onclick="event.stopPropagation();editarAtividade('${a.id}')">Editar</button></td>
+        </tr>`).join('');
+}
+
+function renderizarOnePageReport() {
+    const pend = filtrarPendencias();
+    const atv = filtrarAtividades();
+    const now = pend.filter(p => p.criticidadeOperacional === 'imediato');
+    const today = pend.filter(p => p.criticidadeOperacional === 'dia');
+    const later = pend.filter(p => p.criticidadeOperacional === 'postergar');
+    const ordens = ordensCorretivas.filter(o => {
+        const supervisao = document.getElementById("supervisaoFilterMain")?.value || supervisorSelecionado;
+        const equip = document.getElementById("equipFilterMain")?.value;
+        if (supervisao && (o.supervisor || '').trim() !== supervisao) return false;
+        if (equip && o.tag !== equip) return false;
+        return true;
+    });
+    const abertas = ordens.filter(o => ['Aberta','Pendente','Em andamento'].includes(o.status));
+    const pendentes = ordens.filter(o => ['Pendente','Aberta'].includes(o.status));
+    const ul = (id, items, formatter) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = items.length ? items.slice(0,6).map(formatter).join('') : '<li>Nenhum item nesta faixa.</li>';
+    };
+    const itemFmt = p => `<li><strong>${p.tag}</strong> • ${p.area}<br><span style="font-size:12px;color:var(--gray-600)">${(p.situacao || '').substring(0, 90)}</span></li>`;
+    ul('onePageListaAgora', now, itemFmt); ul('onePageListaDia', today, itemFmt); ul('onePageListaPostergar', later, itemFmt);
+    const setTxt = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    setTxt('onePageNow', now.length); setTxt('onePageToday', today.length); setTxt('onePageLater', later.length); setTxt('onePageExecutadas', atv.length);
+    setTxt('cardCorretivasAbertas', abertas.length); setTxt('cardCorretivasPendentes', pendentes.length);
+    const resumoTxt = document.getElementById('onePageResumoTexto');
+    if (resumoTxt) resumoTxt.textContent = `Supervisor: ${supervisorSelecionado || 'visão geral'} • Pendências abertas: ${pend.length} • Atividades executadas: ${atv.length} • Atualizado em ${new Date().toLocaleString('pt-BR')}.`;
+    const ordensEl = document.getElementById('listaOrdensCorretivas');
+    if (ordensEl) ordensEl.innerHTML = ordens.length ? ordens.slice(0,8).map(o => `<div class="line-item"><strong>${o.os} • ${o.tag}</strong><span>${o.area} • ${o.origem} • <span class="status-pill ${getStatusClass(o.status)}">${o.status}</span></span><span>${o.descricao}</span></div>`).join('') : '<div class="line-item"><strong>Sem ordens no filtro atual</strong><span>Importe ou relacione ordens SAP/MES para este turno.</span></div>';
+    const ativEl = document.getElementById('listaAtividadesRecentes');
+    if (ativEl) ativEl.innerHTML = atv.length ? atv.slice(0,8).map(a => `<div class="line-item"><strong>${a.tag} • ${a.data}</strong><span>${a.area} • ${a.supervisor}</span><span>${a.descricao}</span></div>`).join('') : '<div class="line-item"><strong>Nenhuma atividade executada</strong><span>Cadastre as execuções do turno para gerar a visão consolidada.</span></div>';
+}
+
+function gerarRelatorioPublico() {
+    const atv = filtrarAtividades();
+    const pend = filtrarPendencias();
+    const supervisao = document.getElementById("supervisaoFilterMain")?.value || supervisorSelecionado || 'Todos';
+    const conteudo = `RELATÓRIO DE TURNO\n\nSupervisor: ${supervisao}\nPeríodo: ${document.getElementById('dataInicialFilterMain')?.value || '-'} até ${document.getElementById('dataFinalFilterMain')?.value || '-'}\n\nATIVIDADES EXECUTADAS (${atv.length})\n${atv.map(a => `- ${a.data} | ${a.area} | Letra ${a.letra || '-'} | ${a.turno} | ${a.tag} | O.S. ${a.os || '-'} | ${a.descricao}`).join('\n') || '- Nenhuma atividade no filtro'}\n\nPENDÊNCIAS ABERTAS (${pend.length})\n${pend.map(p => `- ${p.periodoInicial || p.data} | ${p.area} | Letra ${p.letra || '-'} | ${p.turno} | ${p.tag} | ${getCriticidadeLabel(p.criticidadeOperacional)} | ${p.situacao}`).join('\n') || '- Nenhuma pendência no filtro'}\n`;
+    const el = document.getElementById('relatorioConteudo');
+    if (el) el.textContent = conteudo;
+    openModal('relatorio');
+}
+
+function abrirDetalheAtividade(id) {
+    const a = atividadesExecutadas.find(x => x.id === id);
+    if (!a) return;
+    document.getElementById("detalheTitulo").innerHTML = `✅ Atividade ${a.tag}`;
+    document.getElementById("detalheConteudo").innerHTML = `<strong>Área:</strong> ${a.area}<br><strong>Turno:</strong> ${a.turno} / ${a.letra || '-'}<br><strong>Supervisor:</strong> ${a.supervisor}<br><strong>O.S.:</strong> ${a.os || '-'}<br><strong>Criticidade:</strong> ${getCriticidadeLabel(a.criticidade)}<br><br><strong>Atividade executada:</strong><br>${a.descricao}<br><br><strong>Resultado:</strong><br>${a.resultado || '-'}`;
+    openModal('detalhe');
+}
+
+function editarAtividade(id) {
+    const a = atividadesExecutadas.find(x => x.id === id);
+    if (!a || !podeEditarRegistro(a)) return;
+    document.getElementById('editRegistroTipo').value = 'atividade';
+    document.getElementById('editRegistroId').value = id;
+    document.getElementById('editStatus').value = a.status || 'Concluído';
+    document.getElementById('editPrioridade').value = a.criticidade || 'dia';
+    document.getElementById('editSituacao').value = a.descricao || '';
+    document.getElementById('editRecomendacao').value = a.resultado || '';
+    openModal('editarRegistro');
+}
+
+function editarPendencia(id) {
+    const p = pendencias.find(x => x.id === id);
+    if (!p || !podeEditarRegistro(p)) return;
+    document.getElementById('editRegistroTipo').value = 'pendencia';
+    document.getElementById('editRegistroId').value = id;
+    document.getElementById('editStatus').value = p.status || 'Aberto';
+    document.getElementById('editPrioridade').value = p.prioridade || 'medium';
+    document.getElementById('editSituacao').value = p.situacao || '';
+    document.getElementById('editRecomendacao').value = p.recomendacao || '';
+    openModal('editarRegistro');
+}
+
+function salvarEdicaoRegistro(event) {
+    event.preventDefault();
+    const tipo = document.getElementById('editRegistroTipo').value;
+    const id = document.getElementById('editRegistroId').value;
+    if (tipo === 'pendencia') {
+        const idx = pendencias.findIndex(x => x.id === id);
+        if (idx >= 0) {
+            pendencias[idx].status = document.getElementById('editStatus').value;
+            pendencias[idx].prioridade = document.getElementById('editPrioridade').value;
+            pendencias[idx].situacao = document.getElementById('editSituacao').value;
+            pendencias[idx].recomendacao = document.getElementById('editRecomendacao').value;
+            pendencias[idx].criticidadeOperacional = mapearCriticidadeOperacional(pendencias[idx]);
+        }
+    } else {
+        const idx = atividadesExecutadas.findIndex(x => x.id === id);
+        if (idx >= 0) {
+            atividadesExecutadas[idx].status = document.getElementById('editStatus').value;
+            atividadesExecutadas[idx].criticidade = document.getElementById('editPrioridade').value;
+            atividadesExecutadas[idx].descricao = document.getElementById('editSituacao').value;
+            atividadesExecutadas[idx].resultado = document.getElementById('editRecomendacao').value;
+        }
+    }
+    registrarMudancaLocal();
+    closeModal('editarRegistro');
+    showToast('Registro atualizado com sucesso.', 'success');
+    refreshAll();
+}
+
+function filtrarPorCriticidadeOperacional(valor) {
+    const el = document.getElementById('criticidadeOperacionalFilter');
+    if (el) el.value = valor;
+    refreshAll();
 }
 
 // ==================== VARIÁVEIS DE TURNO ====================
 let turnoAtual = { nome: "Turno A", supervisor: "Marcelo Oliveira", avatar: "MO", horario: "06:00 - 14:00" };
 let supervisorSelecionado = "";
+let accessProfile = { role: "read", canEdit: false, canSwitchSupervisor: false, label: "Leitura" };
+const AUTHORIZED_EMAILS = {
+    edit: [],
+    supervisor: []
+};
+const AUTHORIZED_EMAIL_DOMAINS = [];
+let atividadesExecutadas = [
+    { id: "ATV-001", data: "21/03/2026 08:40", dataISO: "2026-03-21T08:40:00", area: "CONCENTRADOR-3", turno: "07:00 às 19:00", letra: "D", supervisor: "Marcelo Oliveira", tag: "02CV007", criticidade: "imediato", descricao: "Troca de um rolo plano de anéis de retorno auto alinhante cavalete 159.", resultado: "Equipamento liberado para operação.", os: "3300229567", status: "Concluído" },
+    { id: "ATV-002", data: "21/03/2026 10:55", dataISO: "2026-03-21T10:55:00", area: "PENEIRAMENTO / BRITAGEM-3", turno: "07:00 às 19:00", letra: "D", supervisor: "Marcelo Oliveira", tag: "03PN002", criticidade: "dia", descricao: "Posição de parafusos da régua central ajustada.", resultado: "Condição estabilizada.", os: "3300229567", status: "Concluído" }
+];
+let ordensCorretivas = [
+    { id: "OS-001", os: "3300229567", area: "CONCENTRADOR-3", tag: "02CV007", status: "Aberta", origem: "SAP", supervisor: "Marcelo Oliveira", descricao: "Troca de rolo plano / retorno auto alinhante." },
+    { id: "OS-002", os: "3300225634", area: "LABORATÓRIO", tag: "02-CV22", status: "Pendente", origem: "MES", supervisor: "Marcelo Oliveira", descricao: "Reparo na resistência de aquecimento da chapa do laboratório." },
+    { id: "OS-003", os: "3300225630", area: "PENEIRAMENTO / BRITAGEM-3", tag: "03PN001", status: "Em andamento", origem: "SAP", supervisor: "Carlos Santos", descricao: "Desmontagem de passarela e montagem das proteções." }
+];
 
 // ==================== DADOS DE PENDÊNCIAS ====================
 let pendencias = [
@@ -786,18 +1217,25 @@ function filtrarPendencias() {
     const sistema = document.getElementById("sistemaFilterMain")?.value;
     const equip = document.getElementById("equipFilterMain")?.value;
     const prioridade = document.getElementById("prioridadeFilterMain")?.value;
+    const criticidade = document.getElementById("criticidadeOperacionalFilter")?.value;
+    const turno = document.getElementById("turnoFilterMain")?.value;
+    const letra = document.getElementById("letraFilterMain")?.value;
+    const supervisao = document.getElementById("supervisaoFilterMain")?.value || supervisorSelecionado;
     const dataInicial = document.getElementById("dataInicialFilterMain")?.value;
     const dataFinal = document.getElementById("dataFinalFilterMain")?.value;
-    const search = document.getElementById("globalSearch")?.value.toLowerCase();
+    const search = (document.getElementById("globalSearch")?.value || '').toLowerCase();
 
     if(areaPrincipal) filtradas = filtradas.filter(p => p.areaPrincipal === areaPrincipal);
     if(subarea) filtradas = filtradas.filter(p => p.subarea === subarea);
     if(sistema) filtradas = filtradas.filter(p => p.sistema === sistema);
     if(equip) filtradas = filtradas.filter(p => p.tag === equip);
     if(prioridade) filtradas = filtradas.filter(p => p.prioridade === prioridade);
-    if(supervisorSelecionado) filtradas = filtradas.filter(p => (p.supervisor || '').trim() === supervisorSelecionado);
+    if(criticidade) filtradas = filtradas.filter(p => p.criticidadeOperacional === criticidade);
+    if(turno) filtradas = filtradas.filter(p => (p.turno || '') === turno);
+    if(letra) filtradas = filtradas.filter(p => (p.letra || '') === letra);
+    if(supervisao) filtradas = filtradas.filter(p => (p.supervisor || '').trim() === supervisao);
     if(dataInicial || dataFinal) filtradas = filtradas.filter(p => filtrarPorPeriodoRegistro(p, dataInicial, dataFinal));
-    if(search) filtradas = filtradas.filter(p => (p.tag || '').toLowerCase().includes(search) || (p.situacao || '').toLowerCase().includes(search) || (p.supervisor || '').toLowerCase().includes(search));
+    if(search) filtradas = filtradas.filter(p => (p.tag || '').toLowerCase().includes(search) || (p.situacao || '').toLowerCase().includes(search) || (p.supervisor || '').toLowerCase().includes(search) || (p.turno || '').toLowerCase().includes(search));
 
     return filtradas;
 }
@@ -809,7 +1247,7 @@ function renderizarSBAR() {
     if(container) {
         container.innerHTML = filtradas.map(p => `
             <div class="sbar-item sbar-${p.prioridade === 'critical' ? 'critical' : (p.prioridade === 'high' ? 'high' : 'medium')}" onclick="abrirDetalhePendencia('${p.id}')">
-                <div class="sbar-header"><span class="sbar-tag">${p.tag}</span><span class="sbar-priority">${p.prioridade === 'critical' ? 'Crítico' : (p.prioridade === 'high' ? 'Alto' : 'Médio')}</span></div>
+                <div class="sbar-header"><span class="sbar-tag">${p.tag}</span><span class="sbar-priority">${p.prioridade === 'critical' ? 'Crítico' : (p.prioridade === 'high' ? 'Alto' : (p.prioridade === 'low' ? 'Baixo' : 'Médio'))}</span></div>
                 <div class="sbar-grid"><div class="sbar-section"><strong>SITUAÇÃO</strong><p>${p.situacao.substring(0, 80)}...</p></div><div class="sbar-section"><strong>RECOMENDAÇÃO</strong><p>${p.recomendacao.substring(0, 80)}...</p></div></div>
                 <div class="sbar-meta"><span>👤 ${p.responsavel}</span><span>⏰ ${p.data}</span><span>📋 ${p.status}</span><span>🔄 ${p.supervisor || turnoAtual.supervisor}</span></div>
             </div>
@@ -818,7 +1256,7 @@ function renderizarSBAR() {
     if(tableBody) {
         tableBody.innerHTML = filtradas.map(p => `
             <tr onclick="abrirDetalhePendencia('${p.id}')"><td>${p.data}</td><td><strong>${p.tag}</strong></td><td>${p.situacao.substring(0, 40)}</td>
-            <td><span style="background:${p.prioridade==='critical'?'#FFEBEE':p.prioridade==='high'?'#FFF3E0':'#FFF8E1'};padding:4px 8px;border-radius:12px">${p.prioridade==='critical'?'Crítico':p.prioridade==='high'?'Alto':'Médio'}</span></td>
+            <td><span style="background:${p.prioridade==='critical'?'#FFEBEE':p.prioridade==='high'?'#FFF3E0':p.prioridade==='low'?'#F1F5F9':'#FFF8E1'};padding:4px 8px;border-radius:12px">${p.prioridade==='critical'?'Crítico':p.prioridade==='high'?'Alto':p.prioridade==='low'?'Baixo':'Médio'}</span></td>
             <td>${p.status}</td><td>${p.responsavel}</td>
             <td><button class="btn" style="padding:4px 8px" onclick="event.stopPropagation();editarPendencia('${p.id}')">Editar</button></td>
         `).join('');
@@ -941,31 +1379,29 @@ function abrirOEE(tipo) { abrirDocumento("OEE"); document.getElementById("detalh
 function abrirEscalacao(nivel) { abrirDocumento("ESCALACAO"); document.getElementById("detalheTitulo").innerHTML = `⬆️ Matriz de Escalação - ${nivel}`; }
 function abrirDetalheHistorico(tag) { abrirDocumento("HISTORICO"); document.getElementById("detalheTitulo").innerHTML = `🕘 Histórico - ${tag}`; }
 function novaInspecaoGemba() { showToast(`Nova inspeção Gemba registrada por ${turnoAtual.supervisor}!`, "success"); }
-function editarPendencia(id) { abrirDetalhePendencia(id); }
 function filtrarTodas() { 
     document.getElementById("areaFilterMain").value = ""; 
     document.getElementById("subareaFilterMain").value = ""; 
     document.getElementById("sistemaFilterMain").value = "";
     document.getElementById("equipFilterMain").value = "";
     document.getElementById("prioridadeFilterMain").value = ""; 
+    if(document.getElementById("criticidadeOperacionalFilter")) document.getElementById("criticidadeOperacionalFilter").value = "";
+    if(document.getElementById("turnoFilterMain")) document.getElementById("turnoFilterMain").value = "";
+    if(document.getElementById("letraFilterMain")) document.getElementById("letraFilterMain").value = "";
+    if(document.getElementById("supervisaoFilterMain")) document.getElementById("supervisaoFilterMain").value = "";
     document.getElementById("globalSearch").value = "";
     document.getElementById("dataInicialFilterMain").value = "";
     document.getElementById("dataFinalFilterMain").value = "";
     carregarSubareasMina();
     carregarSistemas();
     atualizarFiltroEquipamentosMain();
-    atualizarDashboard();
-    renderizarSBAR(); 
-    renderizarKanban();
-    renderizarHistorico();
-    renderizarDocumentos();
-    renderizarOEE();
-    renderizarEscalacao();
+    refreshAll();
 }
-function filtrarPorPrioridade(prioridade) { document.getElementById("prioridadeFilterMain").value = prioridade; atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); }
+function filtrarPorPrioridade(prioridade) { document.getElementById("prioridadeFilterMain").value = prioridade; refreshAll(); }
 
 function salvarPendencia(event) {
     event.preventDefault();
+    if (!accessProfile.canEdit) { showToast('Seu perfil atual não permite registrar pendências.', 'error'); return; }
     const areaCompleta = document.getElementById("areaEquip").value;
     const ctx = obterContextoArea(areaCompleta);
     const turno = document.getElementById("turnoInput").value.trim();
@@ -995,7 +1431,8 @@ function salvarPendencia(event) {
         areaPrincipal: ctx.areaPrincipal,
         subarea: ctx.subarea,
         sistema: detectarSistema(tag),
-        tipoRegistro: 'Pendência'
+        tipoRegistro: 'Pendência',
+        criticidadeOperacional: mapearCriticidadeOperacional({ prioridade: document.getElementById("prioridade").value, status: 'Aberto' })
     });
 
     pendencias.unshift(nova);
@@ -1012,14 +1449,7 @@ function salvarPendencia(event) {
         supervisorSelecionado = supervisor;
     }
 
-    renderSupervisorSelector();
-    atualizarDashboard();
-    renderizarSBAR();
-    renderizarKanban();
-    renderizarGemba();
-    renderizarOEE();
-    renderizarEscalacao();
-    renderizarHistorico();
+    refreshAll();
     registrarMudancaLocal();
     if (currentCloudUser) enviarParaNuvem(false);
     closeModal('novaPendencia');
@@ -1074,14 +1504,18 @@ function closeSidebarOnMobile() {
 function getModalElement(modalId) {
     const mapa = {
         novaPendencia: 'modalNovaPendencia',
+        novaAtividade: 'modalNovaAtividade',
         selecionarSupervisor: 'modalSelecionarSupervisor',
         detalhe: 'modalDetalhe',
+        editarRegistro: 'modalEditarRegistro',
+        relatorio: 'modalRelatorio',
         cloudAccess: 'modalCloudAccess'
     };
     return document.getElementById(mapa[modalId] || modalId);
 }
 function openModal(modalId) {
     if(modalId === 'novaPendencia') prepararModalNovaPendencia();
+    if(modalId === 'novaAtividade') prepararModalNovaAtividade();
     if(modalId === 'selecionarSupervisor') renderSupervisorSelector();
     const modal = getModalElement(modalId);
     if(modal) modal.classList.add('active');
@@ -1112,6 +1546,133 @@ function initSupabase() {
     return supabaseClient;
 }
 
+function emailAutorizadoParaPerfil(email, role) {
+    if (!email || role === 'read') return true;
+    const normalized = String(email).trim().toLowerCase();
+    const domains = (AUTHORIZED_EMAIL_DOMAINS || []).map(d => String(d).trim().toLowerCase()).filter(Boolean);
+    const list = (AUTHORIZED_EMAILS?.[role] || []).map(v => String(v).trim().toLowerCase()).filter(Boolean);
+    if (list.includes(normalized)) return true;
+    if (domains.some(domain => normalized.endsWith(domain))) return true;
+    return list.length === 0 && domains.length === 0;
+}
+
+function resolverPerfilAutorizado(email, requestedRole) {
+    const role = requestedRole || 'read';
+    if (role === 'read') return 'read';
+    if (!emailAutorizadoParaPerfil(email, role)) {
+        showToast('Este e-mail não está autorizado para o perfil solicitado. Acesso mantido como leitura.', 'error');
+        return 'read';
+    }
+    return role;
+}
+
+
+function importarOrdensSapMes() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.csv,.xlsx,.xls';
+    input.onchange = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+            const name = file.name.toLowerCase();
+            let rows = [];
+            if (name.endsWith('.json')) {
+                rows = JSON.parse(await file.text());
+            } else if (name.endsWith('.csv')) {
+                const rawText = await file.text();
+                const normalized = rawText.split(String.fromCharCode(13)).join('');
+                const [headerLine, ...lines] = normalized.split(String.fromCharCode(10)).filter(Boolean);
+                const headers = headerLine.split(',').map(h => h.trim());
+                rows = lines.map(line => {
+                    const cols = line.split(',');
+                    return Object.fromEntries(headers.map((h, i) => [h, (cols[i] || '').trim()]));
+                });
+            } else if ((name.endsWith('.xlsx') || name.endsWith('.xls')) && window.XLSX) {
+                const data = await file.arrayBuffer();
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            }
+            const mapped = (Array.isArray(rows) ? rows : []).map((row, idx) => ({
+                id: row.id || `OS-IMP-${Date.now()}-${idx}`,
+                os: row.os || row.OS || row['Nº ordem'] || row['OS'] || '',
+                area: row.area || row.Area || '',
+                tag: row.tag || row.TAG || row.Equipamento || row['TAG / Equipamento'] || '',
+                status: row.status || row.Status || 'Pendente',
+                origem: row.origem || row.Origem || row.Fonte || 'SAP/MES',
+                supervisor: row.supervisor || row.Supervisor || supervisorSelecionado || '',
+                turno: row.turno || row.Turno || turnoAtual || '',
+                descricao: row.descricao || row.Descricao || row['Descrição'] || row['Descrição breve'] || ''
+            })).filter(item => item.os || item.tag || item.descricao);
+            if (!mapped.length) {
+                showToast('Nenhuma ordem válida encontrada no arquivo.', 'error');
+                return;
+            }
+            ordensCorretivas = [
+                ...mapped,
+                ...ordensCorretivas.filter(old => !mapped.some(n => String(n.os) === String(old.os) && String(n.tag) === String(old.tag)))
+            ];
+            persistirLocal();
+            refreshAll();
+            showToast(`${mapped.length} ordens SAP/MES importadas.`, 'success');
+        } catch (error) {
+            console.error(error);
+            showToast('Falha ao importar arquivo SAP/MES.', 'error');
+        }
+    };
+    input.click();
+}
+
+function copiarRelatorio() {
+    const texto = document.getElementById('relatorioConteudo')?.textContent || '';
+    if (!texto.trim()) { showToast('Gere o relatório antes de copiar.', 'error'); return; }
+    navigator.clipboard.writeText(texto).then(() => showToast('Relatório copiado.', 'success')).catch(() => showToast('Não foi possível copiar o relatório.', 'error'));
+}
+
+function exportarRelatorioExcel() {
+    if (!(window.XLSX && typeof XLSX !== 'undefined')) { showToast('Biblioteca Excel não carregada.', 'error'); return; }
+    const atv = filtrarAtividades();
+    const pend = filtrarPendencias();
+    const wb = XLSX.utils.book_new();
+    const supervisao = document.getElementById("supervisaoFilterMain")?.value || supervisorSelecionado || 'Todos';
+    const resumo = [{ Supervisor: supervisao, GeradoEm: new Date().toLocaleString('pt-BR'), AtividadesExecutadas: atv.length, PendenciasAbertas: pend.length }];
+    const atividadesRows = atv.map(a => ({ Data: a.data, Hora: a.hora || '', Area: a.area, Letra: a.letra || '', Turno: a.turno, Supervisor: a.supervisor, TAG: a.tag, OS: a.os || '', Janela: getCriticidadeLabel(a.criticidade), Atividade: a.descricao, Resultado: a.resultado || '', Status: a.status || 'Concluído' }));
+    const pendRows = pend.map(p => ({ Data: p.periodoInicial || p.data, Area: p.area, Letra: p.letra || '', Turno: p.turno, Supervisor: p.supervisor || '', TAG: p.tag, Criticidade: getCriticidadeLabel(p.criticidadeOperacional), Prioridade: p.prioridade || '', Status: p.status || '', Situacao: p.situacao || '', Recomendacao: p.recomendacao || '' }));
+    const osRows = filtrarOrdensCorretivas().map(o => ({ OS: o.os, Area: o.area, TAG: o.tag, Origem: o.origem, Status: o.status, Supervisor: o.supervisor || '', Descricao: o.descricao || '' }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), 'Resumo');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(atividadesRows.length ? atividadesRows : [{ Observacao: 'Sem atividades no filtro atual' }]), 'Atividades');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pendRows.length ? pendRows : [{ Observacao: 'Sem pendências no filtro atual' }]), 'Pendencias');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(osRows.length ? osRows : [{ Observacao: 'Sem ordens SAP/MES no filtro atual' }]), 'SAP_MES');
+    XLSX.writeFile(wb, `relatorio_turno_${new Date().toISOString().slice(0,10)}.xlsx`);
+    showToast('Relatório Excel gerado.', 'success');
+}
+
+function exportarRelatorioPDF() {
+    if (!(window.jspdf && window.jspdf.jsPDF)) { showToast('Biblioteca PDF não carregada.', 'error'); return; }
+    const texto = document.getElementById('relatorioConteudo')?.textContent || '';
+    if (!texto.trim()) { showToast('Gere o relatório antes de exportar.', 'error'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    const lines = doc.splitTextToSize(texto, pageWidth);
+    let y = margin;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('Relatório do Turno', margin, y);
+    y += 20;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    lines.forEach(line => {
+        if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+        doc.text(line, margin, y);
+        y += 14;
+    });
+    doc.save(`relatorio_turno_${new Date().toISOString().slice(0,10)}.pdf`);
+    showToast('Relatório PDF gerado.', 'success');
+}
+
 function atualizarStatusCloud(msg, type='info') {
     const el = document.getElementById('cloudStatusBox');
     if (el) {
@@ -1128,15 +1689,24 @@ function atualizarUsuarioCloudUI() {
     if (input) input.value = currentCloudUser?.email || 'Nenhum usuário autenticado';
     const msg = currentCloudUser ? `Conectado como ${currentCloudUser.email}` : 'Não conectado';
     atualizarStatusCloud(msg, currentCloudUser ? 'success' : 'info');
+    atualizarAcessoUI();
 }
 
 function serializarPendencias() {
     return pendencias.map(enriquecerPendencia);
 }
 
+function serializarPacoteLocal() {
+    return {
+        pendencias: serializarPendencias(),
+        atividadesExecutadas,
+        ordensCorretivas
+    };
+}
+
 function persistirLocal() {
     try {
-        localStorage.setItem('naza_turnos_local_v1', JSON.stringify(serializarPendencias()));
+        localStorage.setItem('naza_turnos_local_v1', JSON.stringify(serializarPacoteLocal()));
     } catch (e) {}
 }
 
@@ -1144,11 +1714,15 @@ function carregarLocal() {
     try {
         const raw = localStorage.getItem('naza_turnos_local_v1');
         if (!raw) return false;
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr.length) {
-            pendencias = arr.map(enriquecerPendencia);
+        const pacote = JSON.parse(raw);
+        if (Array.isArray(pacote)) {
+            pendencias = pacote.map(enriquecerPendencia);
             return true;
         }
+        if (pacote?.pendencias) pendencias = pacote.pendencias.map(enriquecerPendencia);
+        if (Array.isArray(pacote?.atividadesExecutadas)) atividadesExecutadas = pacote.atividadesExecutadas;
+        if (Array.isArray(pacote?.ordensCorretivas)) ordensCorretivas = pacote.ordensCorretivas;
+        return true;
     } catch (e) {}
     return false;
 }
@@ -1171,6 +1745,7 @@ async function criarAcessoCloud() {
     const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
     if (error) { console.error('Supabase signUp error:', error); showToast(error.message, 'error'); atualizarStatusCloud('Falha ao criar acesso.', 'error'); return; }
     currentCloudUser = data.user || null;
+    setAccessProfile(resolverPerfilAutorizado(email || currentCloudUser?.email, document.getElementById('cloudRole')?.value || accessProfile.role));
     atualizarUsuarioCloudUI();
     const needsConfirm = !data.session;
     showToast(needsConfirm ? 'Acesso criado. Confira o e-mail para confirmar a conta.' : 'Acesso criado e autenticado com sucesso.', 'success');
@@ -1185,6 +1760,7 @@ async function entrarCloud() {
     const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error) { showToast(error.message, 'error'); atualizarStatusCloud('Falha no login.', 'error'); return; }
     currentCloudUser = data.user || null;
+    setAccessProfile(resolverPerfilAutorizado(email || currentCloudUser?.email, document.getElementById('cloudRole')?.value || accessProfile.role));
     atualizarUsuarioCloudUI();
     await baixarDaNuvem(false);
     showToast('Login realizado com sucesso.', 'success');
@@ -1202,7 +1778,7 @@ async function enviarParaNuvem(showMsg=true) {
     const client = initSupabase(); if (!client) return false;
     if (!currentCloudUser) { showToast('Entre na nuvem antes de enviar.', 'error'); return false; }
     atualizarStatusCloud('Enviando dados para a nuvem...', 'info');
-    const payload = { user_id: currentCloudUser.id, pendencias: serializarPendencias(), updated_at: new Date().toISOString() };
+    const payload = { user_id: currentCloudUser.id, pendencias: serializarPendencias(), atividades: atividadesExecutadas, ordens: ordensCorretivas, updated_at: new Date().toISOString() };
     const { error } = await client.from(SUPABASE_TABLE).upsert(payload);
     if (error) { atualizarStatusCloud('Falha ao enviar.', 'error'); showToast(error.message, 'error'); return false; }
     if (showMsg) showToast('Dados enviados para a nuvem.', 'success');
@@ -1214,13 +1790,14 @@ async function baixarDaNuvem(showMsg=true) {
     const client = initSupabase(); if (!client) return false;
     if (!currentCloudUser) { showToast('Entre na nuvem antes de baixar.', 'error'); return false; }
     atualizarStatusCloud('Baixando dados da nuvem...', 'info');
-    const { data, error } = await client.from(SUPABASE_TABLE).select('pendencias, updated_at').eq('user_id', currentCloudUser.id).maybeSingle();
+    const { data, error } = await client.from(SUPABASE_TABLE).select('pendencias, atividades, ordens, updated_at').eq('user_id', currentCloudUser.id).maybeSingle();
     if (error) { atualizarStatusCloud('Falha ao baixar.', 'error'); showToast(error.message, 'error'); return false; }
     if (data?.pendencias && Array.isArray(data.pendencias)) {
         pendencias = data.pendencias.map(enriquecerPendencia);
+        if (Array.isArray(data.atividades)) atividadesExecutadas = data.atividades;
+        if (Array.isArray(data.ordens)) ordensCorretivas = data.ordens;
         persistirLocal();
-        renderSupervisorSelector();
-        atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarGemba(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao();
+        refreshAll();
         if (showMsg) showToast('Dados baixados da nuvem.', 'success');
         atualizarStatusCloud(`Dados baixados. Última atualização: ${new Date(data.updated_at).toLocaleString('pt-BR')}`, 'success');
     } else {
@@ -1254,15 +1831,27 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     });
 });
 
-document.getElementById("areaFilterMain")?.addEventListener("change", () => { carregarSubareasMina(); carregarSistemas(); atualizarFiltroEquipamentosMain(); atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
-document.getElementById("subareaFilterMain")?.addEventListener("change", () => { carregarSistemas(); atualizarFiltroEquipamentosMain(); atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
-document.getElementById("sistemaFilterMain")?.addEventListener("change", () => { atualizarFiltroEquipamentosMain(); atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
-document.getElementById("equipFilterMain")?.addEventListener("change", () => { atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
-document.getElementById("prioridadeFilterMain")?.addEventListener("change", () => { atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
-document.getElementById("globalSearch")?.addEventListener("input", () => { atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
+document.getElementById("areaFilterMain")?.addEventListener("change", () => { carregarSubareasMina(); carregarSistemas(); atualizarFiltroEquipamentosMain(); refreshAll(); });
+document.getElementById("subareaFilterMain")?.addEventListener("change", () => { carregarSistemas(); atualizarFiltroEquipamentosMain(); refreshAll(); });
+document.getElementById("sistemaFilterMain")?.addEventListener("change", () => { atualizarFiltroEquipamentosMain(); refreshAll(); });
+document.getElementById("equipFilterMain")?.addEventListener("change", refreshAll);
+document.getElementById("prioridadeFilterMain")?.addEventListener("change", refreshAll);
+document.getElementById("globalSearch")?.addEventListener("input", refreshAll);
 document.getElementById("historicoSearch")?.addEventListener("input", () => renderizarHistorico());
-document.getElementById("dataInicialFilterMain")?.addEventListener("change", () => { atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
-document.getElementById("dataFinalFilterMain")?.addEventListener("change", () => { atualizarDashboard(); renderizarSBAR(); renderizarKanban(); renderizarHistorico(); renderizarDocumentos(); renderizarOEE(); renderizarEscalacao(); });
+document.getElementById("dataInicialFilterMain")?.addEventListener("change", refreshAll);
+document.getElementById("dataFinalFilterMain")?.addEventListener("change", refreshAll);
+
+document.getElementById("criticidadeOperacionalFilter")?.addEventListener("change", refreshAll);
+document.getElementById("turnoFilterMain")?.addEventListener("change", refreshAll);
+document.getElementById("letraFilterMain")?.addEventListener("change", refreshAll);
+document.getElementById("supervisaoFilterMain")?.addEventListener("change", () => {
+    const valor = document.getElementById("supervisaoFilterMain")?.value || "";
+    if (valor && valor !== supervisorSelecionado) supervisorSelecionado = valor;
+    if (!valor) supervisorSelecionado = "";
+    refreshAll();
+});
+document.getElementById("cloudRole")?.addEventListener("change", (e) => setAccessProfile(e.target.value));
+
 document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape') {
         document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
@@ -1283,6 +1872,7 @@ function inicializarPeriodoFiltros() {
 
 // Inicialização
 carregarLocal();
+restaurarAcessoLocal();
 atualizarTurno();
 inicializarPeriodoFiltros();
 carregarAreas();
@@ -1290,15 +1880,9 @@ carregarSubareasMina();
 carregarSistemas();
 atualizarFiltroEquipamentosMain();
 prepararModalNovaPendencia();
-renderSupervisorSelector();
-atualizarDashboard();
-renderizarSBAR();
-renderizarKanban();
-renderizarGemba();
-renderizarHistorico();
-renderizarDocumentos();
-renderizarOEE();
-renderizarEscalacao();
+prepararModalNovaAtividade();
+carregarFiltrosDinamicos();
+refreshAll();
 restaurarSessaoCloud();
 const __sb = initSupabase();
 if (__sb) {
