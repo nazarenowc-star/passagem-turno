@@ -738,20 +738,21 @@ function carregarEquipamentosAtividade() {
 
 function prepararModalNovaAtividade() {
     const hoje = new Date();
+    const memoria = getMemoriaTurno();
+    preencherDatalist('turnosSugeridos', memoria.turnos);
+    preencherDatalist('supervisoresSugeridos', memoria.supervisores);
+    preencherDatalist('letrasSugeridas', memoria.letras?.length ? memoria.letras : ['A','B','C','D']);
     const dataEl = document.getElementById('atividadeData');
     const horaEl = document.getElementById('atividadeHora');
     const turnoEl = document.getElementById('atividadeTurno');
     const supEl = document.getElementById('atividadeSupervisor');
     const letraEl = document.getElementById('atividadeLetra');
-    const areaEl = document.getElementById('atividadeArea');
     if (dataEl && !dataEl.value) dataEl.value = hoje.toISOString().slice(0,10);
     if (horaEl && !horaEl.value) horaEl.value = hoje.toTimeString().slice(0,5);
     if (turnoEl && !turnoEl.value) turnoEl.value = turnoAtual.horario.replace(/ - /g, ' às ');
-    if (supEl && !supEl.value) supEl.value = turnoAtual.supervisor;
+    if (supEl && !supEl.value) supEl.value = supervisorSelecionado || turnoAtual.supervisor;
     if (letraEl && !letraEl.value) letraEl.value = (turnoAtual.nome || '').replace('Turno ','').trim();
-    if (areaEl && !areaEl.options.length) {
-        areaEl.innerHTML = '<option value="">Selecione</option>' + Object.keys(equipamentosPorArea).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(area => `<option value="${area}">${area}</option>`).join('');
-    }
+    popularSelectAreas('atividadeArea');
     carregarEquipamentosAtividade();
 }
 
@@ -760,6 +761,7 @@ function salvarAtividade(event) {
     if (!accessProfile.canEdit) { showToast('Somente perfis de edição ou supervisor podem registrar atividades.', 'error'); return; }
     const data = document.getElementById('atividadeData').value;
     const hora = document.getElementById('atividadeHora').value || '00:00';
+    if (!document.getElementById('atividadeArea').value || !document.getElementById('atividadeTag').value) { showToast('Selecione a área e o TAG/equipamento da atividade.', 'error'); return; }
     const nova = {
         id: `ATV-${Date.now()}`,
         data: `${data.split('-').reverse().join('/')} ${hora}`,
@@ -1197,11 +1199,21 @@ function carregarEquipamentosPorArea() {
     }
 }
 
+function popularSelectAreas(selectId, placeholder='Selecione') {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const valorAtual = select.value;
+    const areas = Object.keys(equipamentosPorArea).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    select.innerHTML = `<option value="">${placeholder}</option>` + areas.map(area => `<option value="${area}">${area}</option>`).join('');
+    if (valorAtual && equipamentosPorArea[valorAtual]) select.value = valorAtual;
+}
+
 function prepararModalNovaPendencia() {
     const hoje = new Date().toISOString().slice(0,10);
     const memoria = getMemoriaTurno();
     preencherDatalist('turnosSugeridos', memoria.turnos);
     preencherDatalist('supervisoresSugeridos', memoria.supervisores);
+    preencherDatalist('letrasSugeridas', memoria.letras?.length ? memoria.letras : ['A','B','C','D']);
     const periodoInicial = document.getElementById('periodoInicial');
     const periodoFinal = document.getElementById('periodoFinal');
     const turnoInput = document.getElementById('turnoInput');
@@ -1210,8 +1222,21 @@ function prepararModalNovaPendencia() {
     if(periodoInicial && !periodoInicial.value) periodoInicial.value = hoje;
     if(periodoFinal && !periodoFinal.value) periodoFinal.value = hoje;
     if(turnoInput && !turnoInput.value) turnoInput.value = turnoAtual.horario.replace(/ - /g, ' às ');
-    if(supervisorInput && !supervisorInput.value) supervisorInput.value = turnoAtual.supervisor;
+    if(supervisorInput && !supervisorInput.value) supervisorInput.value = supervisorSelecionado || turnoAtual.supervisor;
     if(letraTurno && !letraTurno.value) letraTurno.value = (turnoAtual.nome || '').replace('Turno ','').trim();
+    popularSelectAreas('areaEquip');
+    carregarEquipamentosPorArea();
+}
+
+function prepararModalCloudAccess() {
+    atualizarUsuarioCloudUI();
+    const roleEl = document.getElementById('cloudRole');
+    if (roleEl && accessProfile.role) roleEl.value = accessProfile.role;
+}
+
+function focarPrimeiroCampoModal(modal) {
+    const target = modal?.querySelector('input:not([type="hidden"]):not([disabled]), select, textarea, button');
+    if (target) setTimeout(() => target.focus(), 30);
 }
 
 function atualizarTurno() {
@@ -1582,13 +1607,25 @@ function openModal(modalId) {
     if(modalId === 'novaPendencia') prepararModalNovaPendencia();
     if(modalId === 'novaAtividade') prepararModalNovaAtividade();
     if(modalId === 'selecionarSupervisor') renderSupervisorSelector();
+    if(modalId === 'cloudAccess') prepararModalCloudAccess();
     const modal = getModalElement(modalId);
-    if(modal) modal.classList.add('active');
+    if(modal) {
+        modal.classList.add('active');
+        focarPrimeiroCampoModal(modal);
+    }
 }
 function closeModal(modalId) {
     const modal = getModalElement(modalId);
     if(modal) modal.classList.remove('active');
 }
+document.addEventListener('click', (event) => {
+    const modal = event.target?.classList?.contains('modal') ? event.target : null;
+    if (modal?.classList.contains('active')) modal.classList.remove('active');
+});
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.modal.active').forEach(modal => modal.classList.remove('active'));
+});
 
 
 // ==================== NUVEM SUPABASE ====================
