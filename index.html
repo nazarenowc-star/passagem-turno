@@ -348,53 +348,37 @@ let activeScreen="dashboard";
 let filters={search:"",areaPrincipal:"",subarea:"",equipamento:"",prioridade:"",criticidade:"",turno:"",letra:""};
 
 const STORAGE_KEY="samarco_turno_v3";
-const FS_COLLECTION="passagem_turno";
-const FS_DOC_META="_meta";
-const FS_DOC_DADOS="dados";
+const FS_ROOT="passagem_turno_meta";
+const FS_META_DOC="_meta";
+const FS_COL_PENDENCIAS="passagem_turno_pendencias";
+const FS_COL_ATIVIDADES="passagem_turno_atividades";
+const FS_COL_ORDENS="passagem_turno_ordens";
 
 let _remoteApplying=false;
-let _cloudUnsub=null;
+let _cloudUnsub=[];
 let _syncTimer=null;
 
-function mesclarServidorELocal(rem){
-  rem=rem||{};
-  var rp=Array.isArray(rem.pendencias)?rem.pendencias.slice():[];
-  var ra=Array.isArray(rem.atividades)?rem.atividades.slice():[];
-  var ro=Array.isArray(rem.ordens)?rem.ordens.slice():[];
-  var idp={},ida={},ido={};
-  var addedFromLocal=false;
-  rp.forEach(function(x){if(x&&x.id)idp[x.id]=1});
-  ra.forEach(function(x){if(x&&x.id)ida[x.id]=1});
-  ro.forEach(function(x){if(x&&x.id)ido[x.id]=1});
-  pendencias.forEach(function(x){if(x&&x.id&&!idp[x.id]){rp.push(x);idp[x.id]=1;addedFromLocal=true}});
-  atividades.forEach(function(x){if(x&&x.id&&!ida[x.id]){ra.push(x);ida[x.id]=1;addedFromLocal=true}});
-  ordens.forEach(function(x){if(x&&x.id&&!ido[x.id]){ro.push(x);ido[x.id]=1;addedFromLocal=true}});
-  return {pendencias:rp,atividades:ra,ordens:ro,addedFromLocal:addedFromLocal};
+function safeDocId(id){
+  return String(id).replace(/\//g,"_").substring(0,1500);
 }
 
-function aplicarDadosNuvem(d, snapMeta){
-  if(!d)return;
-  d=mesclarServidorELocal(d);
-  var needPush=d.addedFromLocal;
-  var p=d.pendencias,a=d.atividades,o=d.ordens;
-  if(!Array.isArray(p))p=[];
-  if(!Array.isArray(a))a=[];
-  if(!Array.isArray(o))o=[];
-  var cur=pendencias.length+atividades.length+ordens.length;
-  var inc=p.length+a.length+o.length;
-  if(inc===0&&cur>0&&snapMeta&&snapMeta.fromCache){
-    console.warn("Passagem turno: ignorando snapshot em cache que esvaziaria os dados.");
-    return;
-  }
-  _remoteApplying=true;
-  try{
-    pendencias=p;
-    atividades=a;
-    ordens=o;
-    try{localStorage.setItem(STORAGE_KEY,JSON.stringify({pendencias,atividades,ordens}))}catch(e){}
-    render();
-  }finally{_remoteApplying=false}
-  if(needPush)agendarSyncNuvem();
+function mergeSnapComLocal(snap,localArr){
+  var mapa={};
+  snap.forEach(function(doc){
+    var d=doc.data();
+    mapa[doc.id]=Object.assign({},d,{id:doc.id});
+  });
+  localArr.forEach(function(x){
+    if(x&&x.id&&!Object.prototype.hasOwnProperty.call(mapa,x.id)){
+      mapa[x.id]=x;
+    }
+  });
+  return Object.values(mapa);
+}
+
+function salvarLocalERender(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({pendencias,atividades,ordens}))}catch(e){}
+  render();
 }
 
 function salvar(){
@@ -413,62 +397,97 @@ async function enviarDadosNuvem(){
   if(_remoteApplying||!nuvemLogado||!window.fbDb)return;
   const u=window.fbAuth&&window.fbAuth.currentUser;
   if(!u)return;
+  const db=window.fbDb;
+  const now=firebase.firestore.FieldValue.serverTimestamp();
+  const email=u.email||"";
+  var ops=[];
+  pendencias.forEach(function(it){if(it&&it.id)ops.push({col:FS_COL_PENDENCIAS,item:it})});
+  atividades.forEach(function(it){if(it&&it.id)ops.push({col:FS_COL_ATIVIDADES,item:it})});
+  ordens.forEach(function(it){if(it&&it.id)ops.push({col:FS_COL_ORDENS,item:it})});
   try{
-    await window.fbDb.collection(FS_COLLECTION).doc(FS_DOC_DADOS).set({
-      pendencias:pendencias,
-      atividades:atividades,
-      ordens:ordens,
-      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
-      updatedBy:u.email||""
-    },{merge:true});
-  }catch(err){console.warn("Sync nuvem:",err);showToast("Erro ao sincronizar na nuvem.","error");}
+    for(var i=0;i<ops.length;i+=400){
+      var batch=db.batch();
+      ops.slice(i,i+400).forEach(function(op){
+        var ref=db.collection(op.col).doc(safeDocId(op.item.id));
+        batch.set(ref,Object.assign({},op.item,{id:op.item.id,updatedAt:now,updatedBy:email}),{merge:true});
+      });
+      await batch.commit();
+    }
+  }catch(err){
+    console.warn("Sync nuvem:",err);
+    showToast("Erro ao sincronizar na nuvem.","error");
+  }
+}
+
+async function migrarPacoteUnicoAntigoSeExistir(db){
+  try{
+    var oldRef=db.collection("passagem_turno").doc("dados");
+    var oldSnap=await oldRef.get({source:"server"}).catch(function(){return oldRef.get()});
+    if(!oldSnap.exists)return;
+    var d=oldSnap.data();
+    if(!d)return;
+    var now=firebase.firestore.FieldValue.serverTimestamp();
+    var em=(window.fbAuth&&window.fbAuth.currentUser&&window.fbAuth.currentUser.email)||"";
+    var ops=[];
+    (d.pendencias||[]).forEach(function(it){if(it&&it.id)ops.push({col:FS_COL_PENDENCIAS,item:it})});
+    (d.atividades||[]).forEach(function(it){if(it&&it.id)ops.push({col:FS_COL_ATIVIDADES,item:it})});
+    (d.ordens||[]).forEach(function(it){if(it&&it.id)ops.push({col:FS_COL_ORDENS,item:it})});
+    if(!ops.length)return;
+    for(var i=0;i<ops.length;i+=400){
+      var batch=db.batch();
+      ops.slice(i,i+400).forEach(function(op){
+        var ref=db.collection(op.col).doc(safeDocId(op.item.id));
+        batch.set(ref,Object.assign({},op.item,{id:op.item.id,updatedAt:now,updatedBy:em,migratedFrom:"legacy"}),{merge:true});
+      });
+      await batch.commit();
+    }
+    await oldRef.delete();
+    showToast("Dados migrados do formato antigo (1 doc) para coleções por item.","success");
+  }catch(e){
+    console.warn("Migração legacy:",e);
+  }
 }
 
 async function garantirColecaoFirestore(uid,email){
-  const db=window.fbDb;
-  const metaRef=db.collection(FS_COLLECTION).doc(FS_DOC_META);
-  const metaSnap=await metaRef.get();
+  var db=window.fbDb;
+  var metaRef=db.collection(FS_ROOT).doc(FS_META_DOC);
+  var metaSnap=await metaRef.get();
   if(!metaSnap.exists){
     await metaRef.set({
       app:"Troca de Turno Mecânica",
-      collectionCode:FS_COLLECTION,
       createdAt:firebase.firestore.FieldValue.serverTimestamp(),
       createdByUid:uid,
       createdByEmail:email||""
     });
-    await db.collection(FS_COLLECTION).doc(FS_DOC_DADOS).set({
-      pendencias:pendencias,
-      atividades:atividades,
-      ordens:ordens,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    },{merge:true});
-    showToast("Coleção Firestore criada e primeiro documento gravado.","success");
+    showToast("Firestore: meta criada.","success");
   }
+  await migrarPacoteUnicoAntigoSeExistir(db);
 }
 
 function inscreverNuvem(){
-  if(_cloudUnsub){_cloudUnsub();_cloudUnsub=null}
+  if(_cloudUnsub&&_cloudUnsub.length){
+    _cloudUnsub.forEach(function(un){if(un)un()});
+    _cloudUnsub=[];
+  }
   if(!window.fbDb||!window.fbAuth||!window.fbAuth.currentUser)return;
-  const ref=window.fbDb.collection(FS_COLLECTION).doc(FS_DOC_DADOS);
-  function ligarListener(){
-    _cloudUnsub=ref.onSnapshot(function(snap){
-      if(!snap.exists)return;
-      aplicarDadosNuvem(snap.data(),snap.metadata);
-    },function(err){console.warn("Firestore listener:",err)});
-    agendarSyncNuvem();
-  }
-  if(typeof navigator!=="undefined"&&navigator.onLine){
-    ref.get({source:"server"}).then(function(snap){
-      if(snap.exists)aplicarDadosNuvem(snap.data(),{fromCache:false});
-      agendarSyncNuvem();
-      ligarListener();
-    }).catch(function(e){
-      console.warn("Firestore get(server):",e);
-      ligarListener();
+  var db=window.fbDb;
+  function sub(col,getter,setter){
+    return db.collection(col).onSnapshot(function(snap){
+      _remoteApplying=true;
+      try{
+        setter(mergeSnapComLocal(snap,getter()));
+        salvarLocalERender();
+      }finally{
+        _remoteApplying=false;
+      }
+    },function(err){
+      console.warn("Firestore "+col+":",err);
     });
-  }else{
-    ligarListener();
   }
+  _cloudUnsub.push(sub(FS_COL_PENDENCIAS,function(){return pendencias},function(v){pendencias=v}));
+  _cloudUnsub.push(sub(FS_COL_ATIVIDADES,function(){return atividades},function(v){atividades=v}));
+  _cloudUnsub.push(sub(FS_COL_ORDENS,function(){return ordens},function(v){ordens=v}));
+  agendarSyncNuvem();
 }
 
 function initFirebaseAuth(){
@@ -487,7 +506,10 @@ function initFirebaseAuth(){
         agendarSyncNuvem();
       }catch(e){console.warn(e);showToast("Erro ao preparar nuvem.","error")}
     }else{
-      if(_cloudUnsub){_cloudUnsub();_cloudUnsub=null}
+      if(_cloudUnsub&&_cloudUnsub.length){
+        _cloudUnsub.forEach(function(un){if(un)un()});
+        _cloudUnsub=[];
+      }
       nuvemLogado=null;
     }
     updateNuvemUI();
