@@ -75,8 +75,11 @@ tr:hover{background:rgba(0,0,0,.02)}
 
 /* Filters */
 .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border)}
-.filters select,.filters input[type=text],.filters input[type=date]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--fg);min-height:40px}
-.filters input[type=text]{flex:1;min-width:180px}
+.filters select,.filters input[type=text],.filters input[type=date],.filters input[type=search]{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--card);color:var(--fg);min-height:40px}
+.filters input[type=text],.filters input[type=search]{flex:1;min-width:180px}
+.filters .filtro-datas{display:flex;flex-wrap:wrap;gap:8px;width:100%;align-items:flex-end;margin-top:4px}
+.filters .filtro-datas label{font-size:10px;text-transform:none;margin-bottom:2px}
+.filters .filtro-datas input[type=date]{min-width:140px;max-width:100%}
 
 .btn-primary{padding:8px 16px;background:var(--primary);color:var(--primary-fg);border:none;border-radius:8px;font-size:13px;font-weight:600}
 .btn-outline{padding:8px 16px;background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600}
@@ -347,7 +350,7 @@ let acessos=[];
 
 let supervisorSelecionado="";
 let activeScreen="dashboard";
-let filters={search:"",areaPrincipal:"",subarea:"",equipamento:"",prioridade:"",criticidade:"",turno:"",letra:""};
+let filters={search:"",areaPrincipal:"",subarea:"",equipamento:"",prioridade:"",criticidade:"",turno:"",letra:"",dataInicial:"",dataFinal:""};
 
 const STORAGE_KEY="samarco_turno_v3";
 const FS_ROOT="passagem_turno_meta";
@@ -548,6 +551,53 @@ function prioClass(p){return p==="critical"?"s-open":p==="high"?"s-progress":"s-
 function critClass(c){return c==="imediato"?"s-open":c==="dia"?"s-progress":"s-postpone"}
 function mapCrit(p){if(p.prioridade==="critical"||p.status==="Em andamento")return"imediato";if(p.prioridade==="high"||p.status==="Monitoramento")return"dia";return"postergar"}
 
+function parseDataRegistro(s){
+  if(s==null||s==="")return new Date(0);
+  const str=String(s).trim();
+  let m;
+  m=str.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{1,2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]);
+  m=str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3],12,0);
+  m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s*)(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+  m=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m)return new Date(+m[3],+m[2]-1,+m[1],12,0);
+  m=str.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{1,2})/);
+  if(m){const y=new Date().getFullYear();return new Date(y,+m[2]-1,+m[1],+m[3],+m[4]);}
+  const d=new Date(str);
+  if(!isNaN(d.getTime()))return d;
+  return new Date(0);
+}
+
+function formatDataHoraExibicao(s){
+  const d=parseDataRegistro(s);
+  if(!d.getTime())return s?String(s):"—";
+  return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+
+function passaFiltroIntervaloData(ts){
+  const f=filters;
+  if(!f.dataInicial&&!f.dataFinal)return true;
+  const t=ts.getTime();
+  if(f.dataInicial){
+    const ini=new Date(f.dataInicial+"T00:00:00");
+    if(t<ini.getTime())return false;
+  }
+  if(f.dataFinal){
+    const fim=new Date(f.dataFinal+"T23:59:59.999");
+    if(t>fim.getTime())return false;
+  }
+  return true;
+}
+
+function ordenarPendDataDesc(arr){
+  return arr.slice().sort(function(a,b){return parseDataRegistro(b.data)-parseDataRegistro(a.data)});
+}
+function ordenarAtvDataDesc(arr){
+  return arr.slice().sort(function(a,b){return parseDataRegistro(b.data)-parseDataRegistro(a.data)});
+}
+
 function getSupervisores(){const s=new Set();pendencias.forEach(p=>p.supervisor&&s.add(p.supervisor.trim()));atividades.forEach(a=>a.supervisor&&s.add(a.supervisor.trim()));return[...s].sort()}
 function getAreas(){const a=new Set();Object.keys(equipamentosPorArea).forEach(k=>{const p=k.includes(" - ")?k.split(" - ")[0]:k;a.add(p)});return[...a].sort()}
 function getSubareas(ap){return Object.keys(equipamentosPorArea).filter(a=>a.startsWith(ap+" - ")).sort()}
@@ -562,7 +612,8 @@ if(f.turno)r=r.filter(p=>p.turno===f.turno);
 if(f.letra)r=r.filter(p=>p.letra===f.letra);
 if(supervisorSelecionado)r=r.filter(p=>p.supervisor?.trim()===supervisorSelecionado);
 if(f.search){const s=f.search.toLowerCase();r=r.filter(p=>[p.tag,p.situacao,p.supervisor,p.area].join(" ").toLowerCase().includes(s))}
-return r}
+if(f.dataInicial||f.dataFinal)r=r.filter(function(p){return passaFiltroIntervaloData(parseDataRegistro(p.data))});
+return ordenarPendDataDesc(r)}
 
 function filteredAtv(){let r=[...atividades];const f=filters;
 if(f.areaPrincipal)r=r.filter(a=>{const pp=a.area.includes(" - ")?a.area.split(" - ")[0]:a.area;return pp===f.areaPrincipal});
@@ -571,7 +622,8 @@ if(f.turno)r=r.filter(a=>a.turno===f.turno);
 if(f.letra)r=r.filter(a=>a.letra===f.letra);
 if(supervisorSelecionado)r=r.filter(a=>a.supervisor?.trim()===supervisorSelecionado);
 if(f.search){const s=f.search.toLowerCase();r=r.filter(a=>[a.tag,a.descricao,a.supervisor].join(" ").toLowerCase().includes(s))}
-return r}
+if(f.dataInicial||f.dataFinal)r=r.filter(function(a){return passaFiltroIntervaloData(parseDataRegistro(a.data))});
+return ordenarAtvDataDesc(r)}
 
 // ========== UI ==========
 function toggleSidebar(open){
@@ -594,6 +646,7 @@ function buildNav(){const nav=document.getElementById("navMenu");nav.innerHTML="
 function renderFilters(){const el=document.getElementById("filtersArea");const areas=getAreas();const subs=filters.areaPrincipal==="MINA"?getSubareas("MINA"):[];
 const eqs=getEquipamentos(filters.areaPrincipal,filters.subarea);
 let h=`<div class="filters"><input type="search" id="filtroSearch" name="filtroSearch" autocomplete="off" placeholder="🔍 Pesquisar TAG, equipamento..." value="${filters.search}" oninput="filters.search=this.value;render()">`;
+h+=`<div class="filtro-datas"><div><label for="filtroDataIni">Data inicial</label><input type="date" id="filtroDataIni" name="filtroDataIni" value="${filters.dataInicial||""}" onchange="filters.dataInicial=this.value;render()"></div><div><label for="filtroDataFim">Data final</label><input type="date" id="filtroDataFim" name="filtroDataFim" value="${filters.dataFinal||""}" onchange="filters.dataFinal=this.value;render()"></div><button type="button" class="btn-outline" style="padding:8px 12px;font-size:12px;align-self:flex-end" onclick="filters.dataInicial='';filters.dataFinal='';render()">Limpar datas</button></div>`;
 h+=`<select id="filtroArea" name="filtroArea" onchange="filters.areaPrincipal=this.value;filters.subarea='';filters.equipamento='';render()"><option value="">Todas Áreas</option>${areas.map(a=>`<option ${filters.areaPrincipal===a?"selected":""}>${a}</option>`).join("")}</select>`;
 if(filters.areaPrincipal==="MINA"||subs.length)h+=`<select id="filtroSubarea" name="filtroSubarea" onchange="filters.subarea=this.value;filters.equipamento='';render()"><option value="">Subárea Mina</option>${subs.map(s=>`<option ${filters.subarea===s?"selected":""}>${s}</option>`).join("")}</select>`;
 h+=`<select id="filtroEquip" name="filtroEquip" onchange="filters.equipamento=this.value;render()"><option value="">Equipamentos</option>${eqs.map(e=>`<option ${filters.equipamento===e?"selected":""}>${e}</option>`).join("")}</select>`;
@@ -692,17 +745,17 @@ function gerarTextoRelatorio(){
   txt+=`✅ Atividades: ${atv.length}\n\n`;
   if(cr.length){
     txt+=`⚠️ *PENDÊNCIAS CRÍTICAS:*\n`;
-    cr.forEach(p=>{txt+=`• *${p.tag}* (${p.area}) - ${p.situacao.substring(0,80)}\n  Resp: ${p.responsavel}\n`});
+    cr.forEach(p=>{txt+=`• ${formatDataHoraExibicao(p.data)} — *${p.tag}* (${p.area}) - ${(p.situacao||"").substring(0,80)}\n  Resp: ${p.responsavel}\n`});
     txt+=`\n`;
   }
   if(hi.length){
     txt+=`🟡 *PENDÊNCIAS ALTAS:*\n`;
-    hi.forEach(p=>{txt+=`• *${p.tag}* (${p.area}) - ${p.situacao.substring(0,80)}\n`});
+    hi.forEach(p=>{txt+=`• ${formatDataHoraExibicao(p.data)} — *${p.tag}* (${p.area}) - ${(p.situacao||"").substring(0,80)}\n`});
     txt+=`\n`;
   }
   if(atv.length){
     txt+=`✅ *ATIVIDADES EXECUTADAS:*\n`;
-    atv.slice(0,10).forEach(a=>{txt+=`• *${a.tag}* - ${a.descricao.substring(0,60)}\n`});
+    atv.slice(0,10).forEach(a=>{txt+=`• ${formatDataHoraExibicao(a.data)} — *${a.tag}* - ${(a.descricao||"").substring(0,60)}\n`});
   }
   txt+=`\n_Gerado por Naza Auditoria_`;
   return txt;
@@ -741,25 +794,25 @@ if(!pend.length)h+=`<p style="text-align:center;color:var(--muted-fg);padding:16
 else{h+=`<div style="max-height:400px;overflow-y:auto" class="scrollbar-thin">`;pend.slice(0,10).forEach(p=>{
 h+=`<div class="qr-item qr-${p.prioridade==="critical"?"critical":p.prioridade==="high"?"high":"medium"}" onclick="showDetail('${p.id}')">
 <div style="display:flex;justify-content:space-between;align-items:start;gap:8px"><div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:8px"><strong style="font-size:13px">${p.tag}</strong><span style="font-size:11px;color:var(--muted-fg)">${p.area}</span></div><p style="font-size:11px;color:var(--muted-fg);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.situacao}</p></div><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></div>
-<div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--muted-fg)"><span>👤 ${p.responsavel}</span><span>⏰ ${p.data}</span><span>📋 ${p.status}</span></div></div>`});h+=`</div>`}
+<div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--muted-fg)"><span>👤 ${p.responsavel}</span><span>⏰ ${formatDataHoraExibicao(p.data)}</span><span>📋 ${p.status}</span></div></div>`});h+=`</div>`}
 h+=`</div>`;
 h+=`<div class="grid-3">`;
 [[cr,"🔴 Ação Imediata","var(--sam-red)"],[hi,"🟡 Monitoramento","var(--sam-orange)"],[md,"🔵 Programado","var(--sam-green)"]].forEach(([items,title,color])=>{
 h+=`<div class="kanban-col" style="background:${color}08;border-color:${color}20"><div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid ${color}40"><h4 style="font-size:11px;font-weight:700;text-transform:uppercase">${title}</h4><span class="card" style="padding:2px 8px;font-size:11px;font-weight:700">${items.length}</span></div>`;
-items.slice(0,3).forEach(p=>{h+=`<div class="kanban-card" onclick="showDetail('${p.id}')" style="cursor:pointer"><strong style="font-size:12px">${p.tag}</strong><p style="font-size:10px;color:var(--muted-fg);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.situacao}</p></div>`});h+=`</div>`});
+ordenarPendDataDesc(items).slice(0,3).forEach(p=>{h+=`<div class="kanban-card" onclick="showDetail('${p.id}')" style="cursor:pointer"><strong style="font-size:12px">${p.tag}</strong><p style="font-size:10px;color:var(--muted-fg);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.situacao}</p><p style="font-size:9px;color:var(--muted-fg);margin-top:4px">${formatDataHoraExibicao(p.data)}</p></div>`});h+=`</div>`});
 h+=`</div>`;
 return h}
 
 function renderSBAR(){const pend=filteredPend();
 let h=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Protocolo SBAR - Todos os Registros</h3><span class="status-pill s-postpone">${pend.length} registros</span></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th style="min-width:200px">Situação</th><th>Prioridade</th><th>Status</th><th>Responsável</th><th>Ações</th></tr></thead><tbody>`;
-pend.forEach(p=>{h+=`<tr onclick="showDetail('${p.id}')" style="cursor:pointer"><td>${p.data}</td><td style="font-weight:700">${p.tag}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,40)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td>${p.status}</td><td style="color:var(--muted-fg)">${p.responsavel}</td><td><button class="btn-outline" style="font-size:11px;padding:4px 8px" onclick="event.stopPropagation();openEdit('${p.id}')">Editar</button></td></tr>`});
+pend.forEach(p=>{h+=`<tr onclick="showDetail('${p.id}')" style="cursor:pointer"><td style="white-space:nowrap">${formatDataHoraExibicao(p.data)}</td><td style="font-weight:700">${p.tag}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,40)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td>${p.status}</td><td style="color:var(--muted-fg)">${p.responsavel}</td><td><button class="btn-outline" style="font-size:11px;padding:4px 8px" onclick="event.stopPropagation();openEdit('${p.id}')">Editar</button></td></tr>`});
 if(!pend.length)h+=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted-fg)">Nenhum registro no filtro atual.</td></tr>`;
 h+=`</tbody></table></div></div>`;return h}
 
 function renderAtividades(){const atv=filteredAtv();
 let h=`<div style="background:var(--sam-blue-light);color:var(--sam-blue);padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;margin-bottom:16px">Registro e consulta de atividades executadas no turno, com rastreabilidade completa.</div>`;
 h+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Atividades Executadas</h3><span class="status-pill s-postpone">${atv.length}</span></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th>Área</th><th>Supervisor</th><th>Atividade</th><th>Criticidade</th><th>O.S.</th></tr></thead><tbody>`;
-atv.forEach(a=>{h+=`<tr onclick="showAtvDetail('${a.id}')" style="cursor:pointer"><td>${a.data}</td><td style="font-weight:700">${a.tag}</td><td style="color:var(--muted-fg)">${a.area}</td><td style="color:var(--muted-fg)">${a.supervisor}</td><td style="color:var(--muted-fg)">${(a.descricao||"").substring(0,50)}</td><td><span class="status-pill ${critClass(a.criticidade)}">${critLabel(a.criticidade)}</span></td><td style="color:var(--muted-fg)">${a.os||"-"}</td></tr>`});
+atv.forEach(a=>{h+=`<tr onclick="showAtvDetail('${a.id}')" style="cursor:pointer"><td style="white-space:nowrap">${formatDataHoraExibicao(a.data)}</td><td style="font-weight:700">${a.tag}</td><td style="color:var(--muted-fg)">${a.area}</td><td style="color:var(--muted-fg)">${a.supervisor}</td><td style="color:var(--muted-fg)">${(a.descricao||"").substring(0,50)}</td><td><span class="status-pill ${critClass(a.criticidade)}">${critLabel(a.criticidade)}</span></td><td style="color:var(--muted-fg)">${a.os||"-"}</td></tr>`});
 if(!atv.length)h+=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted-fg)">Nenhuma atividade no filtro atual.</td></tr>`;
 h+=`</tbody></table></div></div>`;return h}
 
@@ -767,7 +820,7 @@ function renderKanban(){const pend=filteredPend();const im=pend.filter(p=>p.prio
 let h=`<div class="grid-3">`;
 [[im,"🔴 Ação Imediata","var(--sam-red)"],[mo,"🟡 Monitoramento","var(--sam-orange)"],[pr,"🔵 Programado","var(--sam-green)"]].forEach(([items,title,color])=>{
 h+=`<div class="kanban-col" style="background:${color}08;border-color:${color}20"><div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid ${color}40"><h4 style="font-size:11px;font-weight:700;text-transform:uppercase">${title}</h4><span class="card" style="padding:2px 8px;font-size:11px;font-weight:700">${items.length}</span></div>`;
-items.forEach(p=>{h+=`<div class="kanban-card" onclick="showDetail('${p.id}')" style="cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:12px">${p.tag}</strong><span class="status-pill ${prioClass(p.prioridade)}" style="font-size:10px">${prioLabel(p.prioridade)}</span></div><p style="font-size:10px;color:var(--muted-fg);margin-top:4px">${p.situacao}</p><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--muted-fg)"><span>👤 ${p.responsavel}</span><span>⏰ ${p.data}</span></div></div>`});h+=`</div>`});
+ordenarPendDataDesc(items).forEach(p=>{h+=`<div class="kanban-card" onclick="showDetail('${p.id}')" style="cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:12px">${p.tag}</strong><span class="status-pill ${prioClass(p.prioridade)}" style="font-size:10px">${prioLabel(p.prioridade)}</span></div><p style="font-size:10px;color:var(--muted-fg);margin-top:4px">${p.situacao}</p><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--muted-fg)"><span>👤 ${p.responsavel}</span><span>⏰ ${formatDataHoraExibicao(p.data)}</span></div></div>`});h+=`</div>`});
 h+=`</div>`;return h}
 
 function renderOnePage(){const pend=filteredPend();const atv=filteredAtv();
@@ -779,11 +832,11 @@ let h=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bo
 h+=`<div class="grid-3" style="margin-bottom:20px">`;
 [[now,"Atacar agora","var(--sam-red)"],[today,"Ao longo do dia","var(--sam-orange)"],[later,"Pode postergar","var(--sam-blue)"]].forEach(([items,title,color])=>{
 h+=`<div class="card" style="padding:16px;border-top:4px solid ${color}"><h3 style="font-size:13px;font-weight:700;margin-bottom:12px">${title}</h3><ul style="list-style:none;padding:0">`;
-items.slice(0,6).forEach(p=>{h+=`<li style="font-size:11px;margin-bottom:8px"><strong>${p.tag}</strong> • ${p.area}<br><span style="color:var(--muted-fg)">${(p.situacao||"").substring(0,80)}</span></li>`});
+items.slice(0,6).forEach(p=>{h+=`<li style="font-size:11px;margin-bottom:8px"><span style="color:var(--muted-fg);font-size:10px">${formatDataHoraExibicao(p.data)}</span><br><strong>${p.tag}</strong> • ${p.area}<br><span style="color:var(--muted-fg)">${(p.situacao||"").substring(0,80)}</span></li>`});
 if(!items.length)h+=`<li style="font-size:11px;color:var(--muted-fg)">Nenhum item</li>`;h+=`</ul></div>`});
 h+=`</div>`;
 h+=`<div class="card" style="padding:16px"><h3 style="font-size:13px;font-weight:700;margin-bottom:12px">Últimas atividades executadas</h3>`;
-atv.slice(0,6).forEach(a=>{h+=`<div style="background:var(--muted);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border)"><strong style="font-size:12px">${a.tag} • ${a.data}</strong><span style="display:block;font-size:11px;color:var(--muted-fg)">${a.area} • ${a.supervisor}</span><span style="display:block;font-size:11px;color:var(--muted-fg)">${a.descricao}</span></div>`});
+atv.slice(0,6).forEach(a=>{h+=`<div style="background:var(--muted);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border)"><strong style="font-size:12px">${a.tag} • ${formatDataHoraExibicao(a.data)}</strong><span style="display:block;font-size:11px;color:var(--muted-fg)">${a.area} • ${a.supervisor}</span><span style="display:block;font-size:11px;color:var(--muted-fg)">${a.descricao}</span></div>`});
 if(!atv.length)h+=`<p style="text-align:center;color:var(--muted-fg);font-size:12px;padding:16px">Nenhuma atividade</p>`;
 h+=`</div>`;return h}
 
@@ -818,12 +871,12 @@ h+=`<div class="grid-2" style="margin-bottom:20px">
 <button class="btn-outline" onclick="window.print()" style="width:100%;margin-bottom:8px">🖨️ Imprimir</button>
 <button class="btn-outline" onclick="exportarBackup()" style="width:100%">📤 Exportar JSON</button>
 </div></div>`;
-h+=`<div class="card" style="margin-bottom:20px"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">🔴 Pendências Críticas e Altas</h4></div><div style="overflow-x:auto"><table><thead><tr><th>TAG</th><th>Área</th><th>Situação</th><th>Prioridade</th><th>Responsável</th></tr></thead><tbody>`;
-pend.filter(p=>p.prioridade==="critical"||p.prioridade==="high").forEach(p=>{h+=`<tr><td style="font-weight:700">${p.tag}</td><td>${p.area}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,60)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td>${p.responsavel}</td></tr>`});
-if(!pend.filter(p=>p.prioridade==="critical"||p.prioridade==="high").length)h+=`<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted-fg)">Nenhuma pendência crítica/alta.</td></tr>`;
+h+=`<div class="card" style="margin-bottom:20px"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">🔴 Pendências Críticas e Altas</h4></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th>Área</th><th>Situação</th><th>Prioridade</th><th>Responsável</th></tr></thead><tbody>`;
+pend.filter(p=>p.prioridade==="critical"||p.prioridade==="high").forEach(p=>{h+=`<tr><td style="white-space:nowrap">${formatDataHoraExibicao(p.data)}</td><td style="font-weight:700">${p.tag}</td><td>${p.area}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,60)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td>${p.responsavel}</td></tr>`});
+if(!pend.filter(p=>p.prioridade==="critical"||p.prioridade==="high").length)h+=`<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted-fg)">Nenhuma pendência crítica/alta.</td></tr>`;
 h+=`</tbody></table></div></div>`;
 h+=`<div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">✅ Atividades Executadas</h4></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th>Área</th><th>Descrição</th><th>O.S.</th></tr></thead><tbody>`;
-atv.forEach(a=>{h+=`<tr><td>${a.data}</td><td style="font-weight:700">${a.tag}</td><td>${a.area}</td><td style="color:var(--muted-fg)">${(a.descricao||"").substring(0,50)}</td><td>${a.os||"-"}</td></tr>`});
+atv.forEach(a=>{h+=`<tr><td style="white-space:nowrap">${formatDataHoraExibicao(a.data)}</td><td style="font-weight:700">${a.tag}</td><td>${a.area}</td><td style="color:var(--muted-fg)">${(a.descricao||"").substring(0,50)}</td><td>${a.os||"-"}</td></tr>`});
 if(!atv.length)h+=`<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted-fg)">Nenhuma atividade.</td></tr>`;
 h+=`</tbody></table></div></div>`;
 return h}
@@ -842,7 +895,7 @@ h+=`<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="ava
 h+=`</tbody></table></div></div>`;
 h+=`<div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">📋 Log de Acessos</h4></div>`;
 if(acessos.length){h+=`<div style="overflow-x:auto"><table><thead><tr><th>Data/Hora</th><th>Supervisor</th><th>Ação</th></tr></thead><tbody>`;
-[...acessos].reverse().forEach(a=>{h+=`<tr><td>${a.data}</td><td style="font-weight:600">${a.nome}</td><td><span class="status-pill s-done">${a.acao}</span></td></tr>`});
+[...acessos].reverse().forEach(a=>{h+=`<tr><td style="white-space:nowrap">${formatDataHoraExibicao(a.data)}</td><td style="font-weight:600">${a.nome}</td><td><span class="status-pill s-done">${a.acao}</span></td></tr>`});
 h+=`</tbody></table></div>`}else{h+=`<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:13px">Nenhum acesso registrado ainda. Selecione um supervisor para começar.</div>`}
 h+=`</div>`;return h}
 
@@ -850,7 +903,7 @@ function showDetail(id){const p=pendencias.find(x=>x.id===id);if(!p)return;
 document.getElementById("detailContent").innerHTML=`
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700">📋 ${p.tag}</h3><button onclick="closeModal('detailModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>
 <div style="display:flex;flex-direction:column;gap:12px;font-size:13px">
-<div><label>ÁREA:</label> ${p.area}</div><div><label>RESPONSÁVEL:</label> ${p.responsavel}</div><div><label>SUPERVISOR:</label> ${p.supervisor}</div><div><label>STATUS:</label> ${p.status}</div><div><label>PRIORIDADE:</label> ${prioLabel(p.prioridade)}</div>
+<div><label>DATA:</label> ${formatDataHoraExibicao(p.data)}</div><div><label>ÁREA:</label> ${p.area}</div><div><label>RESPONSÁVEL:</label> ${p.responsavel}</div><div><label>SUPERVISOR:</label> ${p.supervisor}</div><div><label>STATUS:</label> ${p.status}</div><div><label>PRIORIDADE:</label> ${prioLabel(p.prioridade)}</div>
 <hr style="border:none;border-top:1px solid var(--border)">
 <div><label>SITUAÇÃO (S):</label><p style="margin-top:4px">${p.situacao}</p></div>
 <div><label>BACKGROUND (B):</label><p style="margin-top:4px">${p.background}</p></div>
@@ -862,7 +915,7 @@ function showAtvDetail(id){const a=atividades.find(x=>x.id===id);if(!a)return;
 document.getElementById("detailContent").innerHTML=`
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700">✅ ${a.tag}</h3><button onclick="closeModal('detailModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>
 <div style="display:flex;flex-direction:column;gap:12px;font-size:13px">
-<div><label>ÁREA:</label> ${a.area}</div><div><label>TURNO:</label> ${a.turno} / ${a.letra||"-"}</div><div><label>SUPERVISOR:</label> ${a.supervisor}</div><div><label>O.S.:</label> ${a.os||"-"}</div><div><label>CRITICIDADE:</label> ${critLabel(a.criticidade)}</div>
+<div><label>DATA:</label> ${formatDataHoraExibicao(a.data)}</div><div><label>ÁREA:</label> ${a.area}</div><div><label>TURNO:</label> ${a.turno} / ${a.letra||"-"}</div><div><label>SUPERVISOR:</label> ${a.supervisor}</div><div><label>O.S.:</label> ${a.os||"-"}</div><div><label>CRITICIDADE:</label> ${critLabel(a.criticidade)}</div>
 <hr style="border:none;border-top:1px solid var(--border)">
 <div><label>ATIVIDADE:</label><p style="margin-top:4px">${a.descricao}</p></div>
 <div><label>RESULTADO:</label><p style="margin-top:4px">${a.resultado||"-"}</p></div></div>`;
@@ -899,7 +952,7 @@ if(area&&equipamentosPorArea[area])equipamentosPorArea[area].sort().forEach(t=>{
 
 function submitPendencia(e){e.preventDefault();const area=document.getElementById("pArea").value;const tag=document.getElementById("pTag").value;if(!area||!tag)return;
 const sup=document.getElementById("pSupervisor").value||supervisorSelecionado||"";
-pendencias.unshift({id:`${tag}-${Date.now()}`,tag,area,situacao:document.getElementById("pSituacao").value,background:document.getElementById("pBackground").value,avaliacao:document.getElementById("pAvaliacao").value,recomendacao:document.getElementById("pRecomendacao").value,prioridade:document.getElementById("pPrioridade").value,status:"Aberto",responsavel:document.getElementById("pResponsavel").value,data:new Date().toLocaleString("pt-BR").slice(0,16),turno:document.getElementById("pTurno").value,supervisor:sup,letra:document.getElementById("pLetra").value,periodoInicial:document.getElementById("pPeriodoI").value,periodoFinal:document.getElementById("pPeriodoF").value});
+pendencias.unshift({id:`${tag}-${Date.now()}`,tag,area,situacao:document.getElementById("pSituacao").value,background:document.getElementById("pBackground").value,avaliacao:document.getElementById("pAvaliacao").value,recomendacao:document.getElementById("pRecomendacao").value,prioridade:document.getElementById("pPrioridade").value,status:"Aberto",responsavel:document.getElementById("pResponsavel").value,data:(function(){const n=new Date();return n.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});})(),turno:document.getElementById("pTurno").value,supervisor:sup,letra:document.getElementById("pLetra").value,periodoInicial:document.getElementById("pPeriodoI").value,periodoFinal:document.getElementById("pPeriodoF").value});
 closeModal("newPendencia");e.target.reset();salvar();render();showToast("Pendência registrada!","success")}
 
 function submitAtividade(e){e.preventDefault();const area=document.getElementById("aArea").value;const tag=document.getElementById("aTag").value;if(!area||!tag)return;
