@@ -161,7 +161,7 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 <button class="btn-outline" onclick="openModal('newAtividade')">+ Atividade</button>
 <button class="btn-outline" onclick="exportarBackup()">📤 Exportar</button>
 <button class="btn-outline" onclick="document.getElementById('importFile').click()">📥 Importar</button>
-<input type="file" id="importFile" accept=".json" style="display:none" onchange="importarBackup(event)">
+<input type="file" id="importFile" name="importFile" accept="application/json,.json" autocomplete="off" title="Importar backup JSON" style="display:none" onchange="importarBackup(event)">
 </div>
 </div>
 <div id="filtersArea"></div>
@@ -175,7 +175,7 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 <h3 style="font-size:18px;font-weight:700">Selecionar Supervisor</h3>
 <button onclick="closeModal('supervisorModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button>
 </div>
-<input type="text" id="supSearch" placeholder="Digite o nome do supervisor..." oninput="renderSupList()" onkeydown="if(event.key==='Enter')applySupSearch()" style="margin-bottom:4px">
+<input type="search" id="supSearch" name="supSearch" autocomplete="off" placeholder="Digite o nome do supervisor..." oninput="renderSupList()" onkeydown="if(event.key==='Enter')applySupSearch()" style="margin-bottom:4px">
 <p style="font-size:11px;color:var(--muted-fg);margin-bottom:12px">Digite e tecle Enter, ou toque em um nome abaixo</p>
 <div id="supChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
 <div id="supList" class="scrollbar-thin" style="max-height:50vh;overflow-y:auto"></div>
@@ -193,21 +193,21 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 </div>
 <form onsubmit="submitPendencia(event)">
 <div class="form-grid">
-<div><label>Período Inicial</label><input type="date" id="pPeriodoI"></div>
-<div><label>Período Final</label><input type="date" id="pPeriodoF"></div>
-<div><label>Turno</label><input type="text" id="pTurno" list="turnosDL" placeholder="07:00 às 19:00"></div>
-<div><label>Supervisor</label><input type="text" id="pSupervisor"></div>
-<div><label>Letra</label><select id="pLetra"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-<div><label>Área</label><select id="pArea" onchange="updateTags('p')" required><option value="">Selecione</option></select></div>
-<div><label>TAG / Equipamento</label><select id="pTag" required><option value="">Selecione</option></select></div>
-<div><label>Prioridade</label><select id="pPrioridade"><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium" selected>Médio</option><option value="low">Baixo</option></select></div>
-<div><label>Responsável</label><input type="text" id="pResponsavel" required></div>
+<div><label for="pPeriodoI">Período Inicial</label><input type="date" id="pPeriodoI" name="pPeriodoI"></div>
+<div><label for="pPeriodoF">Período Final</label><input type="date" id="pPeriodoF" name="pPeriodoF"></div>
+<div><label for="pTurno">Turno</label><input type="text" id="pTurno" name="pTurno" list="turnosDL" placeholder="07:00 às 19:00"></div>
+<div><label for="pSupervisor">Supervisor</label><input type="text" id="pSupervisor" name="pSupervisor" autocomplete="name"></div>
+<div><label for="pLetra">Letra</label><select id="pLetra" name="pLetra"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+<div><label for="pArea">Área</label><select id="pArea" name="pArea" onchange="updateTags('p')" required><option value="">Selecione</option></select></div>
+<div><label for="pTag">TAG / Equipamento</label><select id="pTag" name="pTag" required><option value="">Selecione</option></select></div>
+<div><label for="pPrioridade">Prioridade</label><select id="pPrioridade" name="pPrioridade"><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium" selected>Médio</option><option value="low">Baixo</option></select></div>
+<div><label for="pResponsavel">Responsável</label><input type="text" id="pResponsavel" name="pResponsavel" required autocomplete="off"></div>
 </div>
 <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
-<div><label>Situação (S)</label><textarea id="pSituacao" required placeholder="O que está acontecendo?"></textarea></div>
-<div><label>Background (B)</label><textarea id="pBackground" required placeholder="Contexto/histórico?"></textarea></div>
-<div><label>Avaliação (A)</label><textarea id="pAvaliacao" required placeholder="Sua análise"></textarea></div>
-<div><label>Recomendação (R)</label><textarea id="pRecomendacao" required placeholder="O que precisa ser feito?"></textarea></div>
+<div><label for="pSituacao">Situação (S)</label><textarea id="pSituacao" name="pSituacao" required placeholder="O que está acontecendo?"></textarea></div>
+<div><label for="pBackground">Background (B)</label><textarea id="pBackground" name="pBackground" required placeholder="Contexto/histórico?"></textarea></div>
+<div><label for="pAvaliacao">Avaliação (A)</label><textarea id="pAvaliacao" name="pAvaliacao" required placeholder="Sua análise"></textarea></div>
+<div><label for="pRecomendacao">Recomendação (R)</label><textarea id="pRecomendacao" name="pRecomendacao" required placeholder="O que precisa ser feito?"></textarea></div>
 </div>
 <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
 <button type="button" class="btn-outline" onclick="closeModal('newPendencia')">Cancelar</button>
@@ -225,19 +225,19 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 </div>
 <form onsubmit="submitAtividade(event)">
 <div class="form-grid">
-<div><label>Data</label><input type="date" id="aData"></div>
-<div><label>Hora</label><input type="time" id="aHora"></div>
-<div><label>Turno</label><input type="text" id="aTurno" list="turnosDL" placeholder="07:00 às 19:00"></div>
-<div><label>Supervisor</label><input type="text" id="aSupervisor"></div>
-<div><label>Letra</label><select id="aLetra"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-<div><label>Área</label><select id="aArea" onchange="updateTags('a')" required><option value="">Selecione</option></select></div>
-<div><label>TAG / Equipamento</label><select id="aTag" required><option value="">Selecione</option></select></div>
-<div><label>Janela de Ataque</label><select id="aCriticidade"><option value="imediato">Atacado de imediato</option><option value="dia" selected>Ao longo do dia</option><option value="postergar">Pode postergar</option></select></div>
-<div><label>O.S. / SAP</label><input type="text" id="aOS" placeholder="3002256342"></div>
+<div><label for="aData">Data</label><input type="date" id="aData" name="aData"></div>
+<div><label for="aHora">Hora</label><input type="time" id="aHora" name="aHora"></div>
+<div><label for="aTurno">Turno</label><input type="text" id="aTurno" name="aTurno" list="turnosDL" placeholder="07:00 às 19:00"></div>
+<div><label for="aSupervisor">Supervisor</label><input type="text" id="aSupervisor" name="aSupervisor" autocomplete="name"></div>
+<div><label for="aLetra">Letra</label><select id="aLetra" name="aLetra"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+<div><label for="aArea">Área</label><select id="aArea" name="aArea" onchange="updateTags('a')" required><option value="">Selecione</option></select></div>
+<div><label for="aTag">TAG / Equipamento</label><select id="aTag" name="aTag" required><option value="">Selecione</option></select></div>
+<div><label for="aCriticidade">Janela de Ataque</label><select id="aCriticidade" name="aCriticidade"><option value="imediato">Atacado de imediato</option><option value="dia" selected>Ao longo do dia</option><option value="postergar">Pode postergar</option></select></div>
+<div><label for="aOS">O.S. / SAP</label><input type="text" id="aOS" name="aOS" placeholder="3002256342" autocomplete="off"></div>
 </div>
 <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
-<div><label>Atividade executada</label><textarea id="aDescricao" required placeholder="Descreva"></textarea></div>
-<div><label>Resultado</label><textarea id="aResultado" placeholder="Resultado final"></textarea></div>
+<div><label for="aDescricao">Atividade executada</label><textarea id="aDescricao" name="aDescricao" required placeholder="Descreva"></textarea></div>
+<div><label for="aResultado">Resultado</label><textarea id="aResultado" name="aResultado" placeholder="Resultado final"></textarea></div>
 </div>
 <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
 <button type="button" class="btn-outline" onclick="closeModal('newAtividade')">Cancelar</button>
@@ -266,25 +266,27 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 <label>Status</label>
 <div class="acesso-status" id="nuvemStatus">Não conectado</div>
 </div>
+<form id="formNuvemAuth" autocomplete="on" onsubmit="event.preventDefault();nuvemEntrar();return false;" style="margin:0;padding:0;border:none">
 <div class="form-grid">
-<div class="acesso-form-group"><label>E-mail</label><input type="email" id="nuvemEmail" placeholder="seuemail@empresa.com"></div>
-<div class="acesso-form-group"><label>Senha</label><input type="password" id="nuvemSenha" placeholder="Mínimo 6 caracteres"></div>
+<div class="acesso-form-group"><label for="nuvemEmail">E-mail</label><input type="email" id="nuvemEmail" name="nuvemEmail" placeholder="seuemail@empresa.com" autocomplete="username" inputmode="email"></div>
+<div class="acesso-form-group"><label for="nuvemSenha">Senha</label><input type="password" id="nuvemSenha" name="nuvemSenha" placeholder="Mínimo 6 caracteres" autocomplete="current-password"></div>
 </div>
 <div class="acesso-form-group">
-<label>Perfil de acesso</label>
-<select id="nuvemPerfil"><option>Leitura</option><option selected>Edição</option><option>Supervisor / Preposto</option></select>
+<label for="nuvemPerfil">Perfil de acesso</label>
+<select id="nuvemPerfil" name="nuvemPerfil"><option>Leitura</option><option selected>Edição</option><option>Supervisor / Preposto</option></select>
 </div>
 <div class="acesso-form-group">
 <label>Usuário logado</label>
 <div class="acesso-status" id="nuvemUser">Nenhum usuário autenticado</div>
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
-<button class="btn-outline" onclick="nuvemCriarAcesso()">Criar acesso</button>
-<button class="btn-primary" onclick="nuvemEntrar()">Entrar</button>
-<button class="btn-outline" onclick="exportarBackup()">Baixar</button>
-<button class="btn-outline" onclick="document.getElementById('importFile').click()">Enviar</button>
-<button class="btn-outline" onclick="nuvemSair()">Sair</button>
+<button type="button" class="btn-outline" onclick="nuvemCriarAcesso()">Criar acesso</button>
+<button type="submit" class="btn-primary">Entrar</button>
+<button type="button" class="btn-outline" onclick="exportarBackup()">Baixar</button>
+<button type="button" class="btn-outline" onclick="document.getElementById('importFile').click()">Enviar</button>
+<button type="button" class="btn-outline" onclick="nuvemSair()">Sair</button>
 </div>
+</form>
 <p style="font-size:11px;color:var(--muted-fg);margin-top:16px">Use a mesma lógica do outro sistema: cada pessoa cria o próprio acesso e sincroniza os registros na nuvem.</p>
 <p style="font-size:11px;color:var(--muted-fg);margin-top:4px">Perfis de edição e supervisor podem ser limitados por e-mail autorizado na configuração do sistema.</p>
 </div>
@@ -364,16 +366,19 @@ function safeDocId(id){
 
 function mergeSnapComLocal(snap,localArr){
   var mapa={};
+  var semId=[];
   snap.forEach(function(doc){
     var d=doc.data();
     mapa[doc.id]=Object.assign({},d,{id:doc.id});
   });
   localArr.forEach(function(x){
-    if(x&&x.id&&!Object.prototype.hasOwnProperty.call(mapa,x.id)){
+    if(!x)return;
+    if(!x.id){semId.push(x);return;}
+    if(!Object.prototype.hasOwnProperty.call(mapa,x.id)){
       mapa[x.id]=x;
     }
   });
-  return Object.values(mapa);
+  return Object.values(mapa).concat(semId);
 }
 
 function salvarLocalERender(){
@@ -502,6 +507,11 @@ function initFirebaseAuth(){
       nuvemLogado={email:user.email,perfil:perfil};
       try{
         await garantirColecaoFirestore(user.uid,user.email);
+        try{
+          await enviarDadosNuvem();
+        }catch(e2){
+          console.warn("Push inicial nuvem:",e2);
+        }
         inscreverNuvem();
         agendarSyncNuvem();
       }catch(e){console.warn(e);showToast("Erro ao preparar nuvem.","error")}
@@ -583,14 +593,14 @@ function buildNav(){const nav=document.getElementById("navMenu");nav.innerHTML="
 
 function renderFilters(){const el=document.getElementById("filtersArea");const areas=getAreas();const subs=filters.areaPrincipal==="MINA"?getSubareas("MINA"):[];
 const eqs=getEquipamentos(filters.areaPrincipal,filters.subarea);
-let h=`<div class="filters"><input type="text" placeholder="🔍 Pesquisar TAG, equipamento..." value="${filters.search}" oninput="filters.search=this.value;render()">`;
-h+=`<select onchange="filters.areaPrincipal=this.value;filters.subarea='';filters.equipamento='';render()"><option value="">Todas Áreas</option>${areas.map(a=>`<option ${filters.areaPrincipal===a?"selected":""}>${a}</option>`).join("")}</select>`;
-if(filters.areaPrincipal==="MINA"||subs.length)h+=`<select onchange="filters.subarea=this.value;filters.equipamento='';render()"><option value="">Subárea Mina</option>${subs.map(s=>`<option ${filters.subarea===s?"selected":""}>${s}</option>`).join("")}</select>`;
-h+=`<select onchange="filters.equipamento=this.value;render()"><option value="">Equipamentos</option>${eqs.map(e=>`<option ${filters.equipamento===e?"selected":""}>${e}</option>`).join("")}</select>`;
-h+=`<select onchange="filters.prioridade=this.value;render()"><option value="">Prioridade</option><option value="critical" ${filters.prioridade==="critical"?"selected":""}>Crítico</option><option value="high" ${filters.prioridade==="high"?"selected":""}>Alto</option><option value="medium" ${filters.prioridade==="medium"?"selected":""}>Médio</option><option value="low" ${filters.prioridade==="low"?"selected":""}>Baixo</option></select>`;
-h+=`<select onchange="filters.criticidade=this.value;render()"><option value="">Janela de Ataque</option><option value="imediato" ${filters.criticidade==="imediato"?"selected":""}>Agir de imediato</option><option value="dia" ${filters.criticidade==="dia"?"selected":""}>Ao longo do dia</option><option value="postergar" ${filters.criticidade==="postergar"?"selected":""}>Pode postergar</option></select>`;
-h+=`<select onchange="filters.turno=this.value;render()"><option value="">Todos Turnos</option>${["A","B","C","D"].map(t=>`<option value="${t}" ${filters.turno===t?"selected":""}>Turno ${t}</option>`).join("")}</select>`;
-h+=`<select onchange="filters.letra=this.value;render()"><option value="">Todas Letras</option>${["A","B","C","D"].map(l=>`<option value="${l}" ${filters.letra===l?"selected":""}>${l}</option>`).join("")}</select>`;
+let h=`<div class="filters"><input type="search" id="filtroSearch" name="filtroSearch" autocomplete="off" placeholder="🔍 Pesquisar TAG, equipamento..." value="${filters.search}" oninput="filters.search=this.value;render()">`;
+h+=`<select id="filtroArea" name="filtroArea" onchange="filters.areaPrincipal=this.value;filters.subarea='';filters.equipamento='';render()"><option value="">Todas Áreas</option>${areas.map(a=>`<option ${filters.areaPrincipal===a?"selected":""}>${a}</option>`).join("")}</select>`;
+if(filters.areaPrincipal==="MINA"||subs.length)h+=`<select id="filtroSubarea" name="filtroSubarea" onchange="filters.subarea=this.value;filters.equipamento='';render()"><option value="">Subárea Mina</option>${subs.map(s=>`<option ${filters.subarea===s?"selected":""}>${s}</option>`).join("")}</select>`;
+h+=`<select id="filtroEquip" name="filtroEquip" onchange="filters.equipamento=this.value;render()"><option value="">Equipamentos</option>${eqs.map(e=>`<option ${filters.equipamento===e?"selected":""}>${e}</option>`).join("")}</select>`;
+h+=`<select id="filtroPrioridade" name="filtroPrioridade" onchange="filters.prioridade=this.value;render()"><option value="">Prioridade</option><option value="critical" ${filters.prioridade==="critical"?"selected":""}>Crítico</option><option value="high" ${filters.prioridade==="high"?"selected":""}>Alto</option><option value="medium" ${filters.prioridade==="medium"?"selected":""}>Médio</option><option value="low" ${filters.prioridade==="low"?"selected":""}>Baixo</option></select>`;
+h+=`<select id="filtroCriticidade" name="filtroCriticidade" onchange="filters.criticidade=this.value;render()"><option value="">Janela de Ataque</option><option value="imediato" ${filters.criticidade==="imediato"?"selected":""}>Agir de imediato</option><option value="dia" ${filters.criticidade==="dia"?"selected":""}>Ao longo do dia</option><option value="postergar" ${filters.criticidade==="postergar"?"selected":""}>Pode postergar</option></select>`;
+h+=`<select id="filtroTurno" name="filtroTurno" onchange="filters.turno=this.value;render()"><option value="">Todos Turnos</option>${["A","B","C","D"].map(t=>`<option value="${t}" ${filters.turno===t?"selected":""}>Turno ${t}</option>`).join("")}</select>`;
+h+=`<select id="filtroLetra" name="filtroLetra" onchange="filters.letra=this.value;render()"><option value="">Todas Letras</option>${["A","B","C","D"].map(l=>`<option value="${l}" ${filters.letra===l?"selected":""}>${l}</option>`).join("")}</select>`;
 h+=`</div>`;
 el.innerHTML=h}
 
@@ -863,10 +873,10 @@ if(supervisorSelecionado&&p.supervisor?.trim()!==supervisorSelecionado){showToas
 document.getElementById("editContent").innerHTML=`
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700">Editar ${p.tag}</h3><button onclick="closeModal('editModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>
 <div style="display:flex;flex-direction:column;gap:12px">
-<div><label>Status</label><select id="editStatus"><option ${p.status==="Aberto"?"selected":""}>Aberto</option><option ${p.status==="Em andamento"?"selected":""}>Em andamento</option><option ${p.status==="Monitoramento"?"selected":""}>Monitoramento</option><option ${p.status==="Concluído"?"selected":""}>Concluído</option></select></div>
-<div><label>Prioridade</label><select id="editPrio"><option value="critical" ${p.prioridade==="critical"?"selected":""}>Crítico</option><option value="high" ${p.prioridade==="high"?"selected":""}>Alto</option><option value="medium" ${p.prioridade==="medium"?"selected":""}>Médio</option><option value="low" ${p.prioridade==="low"?"selected":""}>Baixo</option></select></div>
-<div><label>Situação</label><textarea id="editSit">${p.situacao}</textarea></div>
-<div><label>Recomendação</label><textarea id="editRec">${p.recomendacao}</textarea></div>
+<div><label for="editStatus">Status</label><select id="editStatus" name="editStatus"><option ${p.status==="Aberto"?"selected":""}>Aberto</option><option ${p.status==="Em andamento"?"selected":""}>Em andamento</option><option ${p.status==="Monitoramento"?"selected":""}>Monitoramento</option><option ${p.status==="Concluído"?"selected":""}>Concluído</option></select></div>
+<div><label for="editPrio">Prioridade</label><select id="editPrio" name="editPrio"><option value="critical" ${p.prioridade==="critical"?"selected":""}>Crítico</option><option value="high" ${p.prioridade==="high"?"selected":""}>Alto</option><option value="medium" ${p.prioridade==="medium"?"selected":""}>Médio</option><option value="low" ${p.prioridade==="low"?"selected":""}>Baixo</option></select></div>
+<div><label for="editSit">Situação</label><textarea id="editSit" name="editSit">${p.situacao}</textarea></div>
+<div><label for="editRec">Recomendação</label><textarea id="editRec" name="editRec">${p.recomendacao}</textarea></div>
 </div>
 <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
 <button class="btn-outline" onclick="closeModal('editModal')">Cancelar</button>
