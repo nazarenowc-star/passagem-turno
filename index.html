@@ -313,17 +313,9 @@ window.__FIREBASE_CONFIG__ = window.__FIREBASE_CONFIG__ || {
 firebase.initializeApp(window.__FIREBASE_CONFIG__);
 window.fbAuth = firebase.auth();
 window.fbDb = firebase.firestore();
-/* Offline: cache local + fila de escrita; sincroniza quando a rede voltar.
-   Login inicial ainda precisa de internet; depois a sessão costuma persistir. */
-window.fbDb.enablePersistence().catch(function (err) {
-  if (err.code === "failed-precondition") {
-    console.warn("Firestore: persistência só em uma aba por vez.");
-  } else if (err.code === "unimplemented") {
-    console.warn("Firestore: navegador sem persistência offline.");
-  } else {
-    console.warn("Firestore persistence:", err);
-  }
-});
+/* Sem enablePersistence(): o cache IndexedDB do Firestore gerava aviso depreciação e,
+   no 1º login, snapshots vazios podiam apagar a tela. Dados continuam no localStorage;
+   a nuvem sincroniza com rede; sem rede use Exportar / Importar JSON se precisar. */
 </script>
 
 <script>
