@@ -315,7 +315,7 @@ window.fbAuth = firebase.auth();
 window.fbDb = firebase.firestore();
 /* Offline: cache local + fila de escrita; sincroniza quando a rede voltar.
    Login inicial ainda precisa de internet; depois a sessão costuma persistir. */
-window.fbDb.enablePersistence({ synchronizeTabs: true }).catch(function (err) {
+window.fbDb.enablePersistence().catch(function (err) {
   if (err.code === "failed-precondition") {
     console.warn("Firestore: persistência só em uma aba por vez.");
   } else if (err.code === "unimplemented") {
@@ -363,6 +363,47 @@ const FS_DOC_DADOS="dados";
 let _remoteApplying=false;
 let _cloudUnsub=null;
 let _syncTimer=null;
+
+function mesclarServidorELocal(rem){
+  rem=rem||{};
+  var rp=Array.isArray(rem.pendencias)?rem.pendencias.slice():[];
+  var ra=Array.isArray(rem.atividades)?rem.atividades.slice():[];
+  var ro=Array.isArray(rem.ordens)?rem.ordens.slice():[];
+  var idp={},ida={},ido={};
+  var addedFromLocal=false;
+  rp.forEach(function(x){if(x&&x.id)idp[x.id]=1});
+  ra.forEach(function(x){if(x&&x.id)ida[x.id]=1});
+  ro.forEach(function(x){if(x&&x.id)ido[x.id]=1});
+  pendencias.forEach(function(x){if(x&&x.id&&!idp[x.id]){rp.push(x);idp[x.id]=1;addedFromLocal=true}});
+  atividades.forEach(function(x){if(x&&x.id&&!ida[x.id]){ra.push(x);ida[x.id]=1;addedFromLocal=true}});
+  ordens.forEach(function(x){if(x&&x.id&&!ido[x.id]){ro.push(x);ido[x.id]=1;addedFromLocal=true}});
+  return {pendencias:rp,atividades:ra,ordens:ro,addedFromLocal:addedFromLocal};
+}
+
+function aplicarDadosNuvem(d, snapMeta){
+  if(!d)return;
+  d=mesclarServidorELocal(d);
+  var needPush=d.addedFromLocal;
+  var p=d.pendencias,a=d.atividades,o=d.ordens;
+  if(!Array.isArray(p))p=[];
+  if(!Array.isArray(a))a=[];
+  if(!Array.isArray(o))o=[];
+  var cur=pendencias.length+atividades.length+ordens.length;
+  var inc=p.length+a.length+o.length;
+  if(inc===0&&cur>0&&snapMeta&&snapMeta.fromCache){
+    console.warn("Passagem turno: ignorando snapshot em cache que esvaziaria os dados.");
+    return;
+  }
+  _remoteApplying=true;
+  try{
+    pendencias=p;
+    atividades=a;
+    ordens=o;
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify({pendencias,atividades,ordens}))}catch(e){}
+    render();
+  }finally{_remoteApplying=false}
+  if(needPush)agendarSyncNuvem();
+}
 
 function salvar(){
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify({pendencias,atividades,ordens}))}catch(e){}
@@ -417,18 +458,25 @@ function inscreverNuvem(){
   if(_cloudUnsub){_cloudUnsub();_cloudUnsub=null}
   if(!window.fbDb||!window.fbAuth||!window.fbAuth.currentUser)return;
   const ref=window.fbDb.collection(FS_COLLECTION).doc(FS_DOC_DADOS);
-  _cloudUnsub=ref.onSnapshot(function(snap){
-    if(!snap.exists)return;
-    const d=snap.data();
-    _remoteApplying=true;
-    try{
-      if(Array.isArray(d.pendencias))pendencias=d.pendencias;
-      if(Array.isArray(d.atividades))atividades=d.atividades;
-      if(Array.isArray(d.ordens))ordens=d.ordens;
-      try{localStorage.setItem(STORAGE_KEY,JSON.stringify({pendencias,atividades,ordens}))}catch(e){}
-      render();
-    }finally{_remoteApplying=false}
-  },function(err){console.warn("Firestore listener:",err)});
+  function ligarListener(){
+    _cloudUnsub=ref.onSnapshot(function(snap){
+      if(!snap.exists)return;
+      aplicarDadosNuvem(snap.data(),snap.metadata);
+    },function(err){console.warn("Firestore listener:",err)});
+    agendarSyncNuvem();
+  }
+  if(typeof navigator!=="undefined"&&navigator.onLine){
+    ref.get({source:"server"}).then(function(snap){
+      if(snap.exists)aplicarDadosNuvem(snap.data(),{fromCache:false});
+      agendarSyncNuvem();
+      ligarListener();
+    }).catch(function(e){
+      console.warn("Firestore get(server):",e);
+      ligarListener();
+    });
+  }else{
+    ligarListener();
+  }
 }
 
 function initFirebaseAuth(){
@@ -444,6 +492,7 @@ function initFirebaseAuth(){
       try{
         await garantirColecaoFirestore(user.uid,user.email);
         inscreverNuvem();
+        agendarSyncNuvem();
       }catch(e){console.warn(e);showToast("Erro ao preparar nuvem.","error")}
     }else{
       if(_cloudUnsub){_cloudUnsub();_cloudUnsub=null}
