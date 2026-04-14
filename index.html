@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Naza Auditoria - Passagem de Turno</title>
+<title>Relatório de Turno GMG</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -68,6 +68,7 @@ tr:hover{background:rgba(0,0,0,.02)}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
 .modal-bg.show{display:flex}
 .modal{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+#editContent.modal{max-width:720px}
 
 /* Toast */
 .toast{position:fixed;bottom:20px;right:20px;z-index:1100;padding:12px 20px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);background:var(--card);border-left:4px solid var(--sam-green);font-size:13px;font-weight:600;animation:slideIn .3s}
@@ -127,6 +128,27 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 .acesso-form-group label{margin-bottom:6px}
 .acesso-status{padding:10px 16px;border-radius:8px;background:var(--muted);font-size:13px;font-weight:600;color:var(--muted-fg)}
 .acesso-status.online{background:var(--sam-green-light);color:var(--sam-green)}
+.brand-footer{position:fixed;bottom:10px;right:14px;z-index:35;font-size:11px;opacity:1;pointer-events:none;white-space:nowrap;text-align:right;line-height:1.35}
+.brand-footer-brand{font-weight:800;color:var(--sam-red);display:block}
+.screen-tagline{font-size:13px;font-weight:800;color:var(--sam-red);margin:4px 0 0}
+.heading-monitoramento{color:var(--sam-red);font-weight:800}
+main{padding-bottom:36px}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  #sidebar,.no-print,#toastEl{display:none!important}
+  main{margin-left:0!important;padding:6px 8px 22px!important;width:100%!important;max-width:none!important}
+  body{background:#fff}
+  .brand-footer{position:fixed;bottom:8px;right:10px;opacity:1}
+  .brand-footer .brand-footer-brand{color:var(--sam-red);font-weight:800}
+  #screenContent{width:100%!important}
+  #screenContent .card{break-inside:avoid;page-break-inside:avoid}
+  #screenContent .report-header{break-after:avoid}
+  #screenContent table{width:100%;border-collapse:collapse;table-layout:auto}
+  #screenContent th,#screenContent td{font-size:8px!important;padding:3px 4px!important;vertical-align:top;word-break:break-word}
+  #screenContent th{white-space:normal!important}
+  #screenContent td{white-space:normal!important}
+  #screenContent div[style*="overflow-x:auto"]{overflow:visible!important}
+}
 </style>
 </head>
 <body>
@@ -135,7 +157,7 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 
 <!-- SIDEBAR -->
 <aside id="sidebar">
-<div class="logo"><h1>Naza Auditoria</h1><span>Sistema de Passagem de Turno</span></div>
+<div class="logo"><h1>Relatório de Turno GMG</h1></div>
 <div class="sup-card" onclick="openModal('supervisorModal')">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
 <span style="padding:2px 10px;background:var(--sam-yellow);color:#1e293b;border-radius:20px;font-size:11px;font-weight:700" id="supTurnoLabel">Visão Geral</span>
@@ -156,18 +178,17 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 
 <!-- MAIN -->
 <main>
-<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px">
-<div><h2 style="font-size:20px;font-weight:800" id="screenTitle">Dashboard Executivo</h2><p style="font-size:11px;color:var(--muted-fg)" id="screenDate"></p></div>
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px" class="no-print">
+<div style="flex:1;min-width:0"><h2 style="font-size:20px;font-weight:800" id="screenTitle">Visão do turno</h2><p class="screen-tagline" id="screenTagline" style="display:none">Pontos de Monitoramento</p><p style="font-size:11px;color:var(--muted-fg)" id="screenDate"></p></div>
 <div style="display:flex;flex-wrap:wrap;gap:8px">
 <button class="btn-outline" onclick="toggleSidebar(true)" id="menuBtn">☰ Menu</button>
 <button class="btn-primary" onclick="openModal('newPendencia')">+ Pendência</button>
-<button class="btn-outline" onclick="openModal('newAtividade')">+ Atividade</button>
 <button class="btn-outline" onclick="exportarBackup()">📤 Exportar</button>
 <button class="btn-outline" onclick="document.getElementById('importFile').click()">📥 Importar</button>
 <input type="file" id="importFile" name="importFile" accept="application/json,.json" autocomplete="off" title="Importar backup JSON" style="display:none" onchange="importarBackup(event)">
 </div>
 </div>
-<div id="filtersArea"></div>
+<div id="filtersArea" class="no-print"></div>
 <div id="screenContent"></div>
 </main>
 
@@ -191,7 +212,7 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 <div class="modal-bg" id="newPendencia" onclick="if(event.target===this)closeModal('newPendencia')">
 <div class="modal" onclick="event.stopPropagation()">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-<h3 style="font-size:18px;font-weight:700">Nova Pendência SBAR</h3>
+<h3 class="heading-monitoramento" style="font-size:18px">Novo ponto de monitoramento</h3>
 <button onclick="closeModal('newPendencia')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button>
 </div>
 <form onsubmit="submitPendencia(event)">
@@ -201,11 +222,20 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 <div><label for="pTurno">Turno</label><input type="text" id="pTurno" name="pTurno" list="turnosDL" placeholder="07:00 às 19:00"></div>
 <div><label for="pSupervisor">Supervisor</label><input type="text" id="pSupervisor" name="pSupervisor" autocomplete="name"></div>
 <div><label for="pLetra">Letra</label><select id="pLetra" name="pLetra"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-<div><label for="pArea">Área</label><select id="pArea" name="pArea" onchange="updateTags('p')" required><option value="">Selecione</option></select></div>
-<div><label for="pTag">TAG / Equipamento</label><select id="pTag" name="pTag" required><option value="">Selecione</option></select></div>
+<div><label for="pArea">Área</label><select id="pArea" name="pArea" onchange="onAreaChange('p')" required><option value="">Selecione</option></select></div>
+<div id="pAreaOutroRow" style="display:none;grid-column:1/-1"><label for="pAreaOutro">Área (livre)</label><input type="text" id="pAreaOutro" name="pAreaOutro" placeholder="Digite a área se escolheu Outro"></div>
+<div style="grid-column:1/-1"><label for="pTag">TAG / Equipamento</label><select id="pTag" name="pTag" required onchange="toggleTagOutro('p')"><option value="">Selecione</option></select></div>
+<div id="pTagOutroRow" style="display:none;grid-column:1/-1;margin-top:-4px"><label for="pTagOutro">Equipamento / TAG (livre)</label><input type="text" id="pTagOutro" name="pTagOutro" placeholder="Se não estiver na lista, digite aqui"></div>
 <div><label for="pPrioridade">Prioridade</label><select id="pPrioridade" name="pPrioridade"><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium" selected>Médio</option><option value="low">Baixo</option></select></div>
+<div><label for="pCriticidade">Janela de ataque</label><select id="pCriticidade" name="pCriticidade"><option value="imediato">Agir de imediato</option><option value="dia" selected>Ao longo do dia</option><option value="postergar">Pode postergar</option></select></div>
+<div><label for="pOS">O.S. / SAP</label><input type="text" id="pOS" name="pOS" placeholder="Nº da ordem (opcional)" autocomplete="off"></div>
 <div><label for="pResponsavel">Responsável</label><input type="text" id="pResponsavel" name="pResponsavel" required autocomplete="off"></div>
+<div><label for="pHoraIniT">Horário início da tarefa</label><input type="time" id="pHoraIniT" name="pHoraIniT"></div>
+<div><label for="pHoraFimT">Horário fim da tarefa</label><input type="time" id="pHoraFimT" name="pHoraFimT"></div>
+<div><label for="pHoraIniExec">Hora início (execução)</label><input type="time" id="pHoraIniExec" name="pHoraIniExec"></div>
+<div><label for="pHoraFimExec">Hora fim (execução)</label><input type="time" id="pHoraFimExec" name="pHoraFimExec"></div>
 </div>
+<p style="font-size:11px;color:var(--muted-fg);margin-top:8px">A data/hora gravada automaticamente é a de <strong>abertura do registro</strong>. Use os horários acima para o período real da intervenção.</p>
 <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
 <div><label for="pSituacao">Situação (S)</label><textarea id="pSituacao" name="pSituacao" required placeholder="O que está acontecendo?"></textarea></div>
 <div><label for="pBackground">Background (B)</label><textarea id="pBackground" name="pBackground" required placeholder="Contexto/histórico?"></textarea></div>
@@ -214,36 +244,6 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 </div>
 <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
 <button type="button" class="btn-outline" onclick="closeModal('newPendencia')">Cancelar</button>
-<button type="submit" class="btn-primary">Registrar</button>
-</div>
-</form>
-</div>
-</div>
-
-<div class="modal-bg" id="newAtividade" onclick="if(event.target===this)closeModal('newAtividade')">
-<div class="modal" onclick="event.stopPropagation()">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-<h3 style="font-size:18px;font-weight:700">Nova Atividade Executada</h3>
-<button onclick="closeModal('newAtividade')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button>
-</div>
-<form onsubmit="submitAtividade(event)">
-<div class="form-grid">
-<div><label for="aData">Data</label><input type="date" id="aData" name="aData"></div>
-<div><label for="aHora">Hora</label><input type="time" id="aHora" name="aHora"></div>
-<div><label for="aTurno">Turno</label><input type="text" id="aTurno" name="aTurno" list="turnosDL" placeholder="07:00 às 19:00"></div>
-<div><label for="aSupervisor">Supervisor</label><input type="text" id="aSupervisor" name="aSupervisor" autocomplete="name"></div>
-<div><label for="aLetra">Letra</label><select id="aLetra" name="aLetra"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-<div><label for="aArea">Área</label><select id="aArea" name="aArea" onchange="updateTags('a')" required><option value="">Selecione</option></select></div>
-<div><label for="aTag">TAG / Equipamento</label><select id="aTag" name="aTag" required><option value="">Selecione</option></select></div>
-<div><label for="aCriticidade">Janela de Ataque</label><select id="aCriticidade" name="aCriticidade"><option value="imediato">Atacado de imediato</option><option value="dia" selected>Ao longo do dia</option><option value="postergar">Pode postergar</option></select></div>
-<div><label for="aOS">O.S. / SAP</label><input type="text" id="aOS" name="aOS" placeholder="3002256342" autocomplete="off"></div>
-</div>
-<div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
-<div><label for="aDescricao">Atividade executada</label><textarea id="aDescricao" name="aDescricao" required placeholder="Descreva"></textarea></div>
-<div><label for="aResultado">Resultado</label><textarea id="aResultado" name="aResultado" placeholder="Resultado final"></textarea></div>
-</div>
-<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
-<button type="button" class="btn-outline" onclick="closeModal('newAtividade')">Cancelar</button>
 <button type="submit" class="btn-primary">Registrar</button>
 </div>
 </form>
@@ -298,6 +298,7 @@ label{display:block;font-size:11px;font-weight:600;color:var(--muted-fg);margin-
 <datalist id="turnosDL"><option value="07:00 às 19:00"><option value="19:00 às 07:00"><option value="06:00 às 14:00"><option value="14:00 às 22:00"><option value="22:00 às 06:00"></datalist>
 
 <div id="toastEl" style="display:none" class="toast"></div>
+<div class="brand-footer" id="brandFooter"><span class="brand-footer-brand">Pontos de Monitoramento</span><span class="brand-footer-brand">Desenvolvido por Nazareno</span></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -328,11 +329,11 @@ window.fbDb = firebase.firestore();
 const equipamentosPorArea={"MINA":["11CV56","11CV66","02CV009","11CR01","11CR03","11CR14","11CR15","11CR07","Loccotrack 01","Loccotrack 02","Loccotrack 03","11CR10","11CR12","11CR13"],"MINA - Sul 1":["11CR12","11CV72","02CV002"],"MINA - Sul 2":["11LK03","11CR14","02CV009","11CV68","11CV67","11CV07","11CR05","11CV69","11CR19"],"MINA - Centro":["11CR13","02CV037","02CV038","02CV039","02CV040","02CV041","11CV21","11CV64","11LK01","11CV20","Hopper 13"],"MINA - Norte":["11CR03","11CR10","11CR15","11CV23","11CV24","11CV70","Lokotrack 01"],"MINA - Fazendão":["11LK02","11CV56","Lokotrack 02"],"MINA FIXA":["11CV72","11CV01","11CV02","11CV24","02CV002","11CV21","11CV23"],"MINA MÓVEL":["11CV18","11CV19","11CV20","11CV69","11CV68","11CV70","11CV71"],"MINA P.CENTRO":["02CV037","02CV038","02CV039","02CV040","02CV041"],"MINA FAZENDÃO":["11CV56"],"BRITAGEM 2":["G02-03CV003","G02-03CV004","G02-03AL009","G02-03AL010","G02-03AL011","G02-03AL012","G02-03AL013","G02-03CV006","G02-05CV001","G02-03CV005","G02-05CV002","G02-05CV003","G02-03CV002","G02-03CV001","G02-03AL001","G02-03AL002","G02-03AL003","G02-03AL004","G02-03AL005","G02-03AL006","G02-03AL007","G02-03AL008","G02-05AL001","G02-05AL002"],"BRITAGEM 3":["02CV011","02CV012","03CV014","03CV015","03CV017","03CV016","03CV018","03CV019","03CV020","03CV021","03CV022","03CV023","03CV024","05CV025","03AL001","03AL002","03AL003","03AL004","03AL005","03AL006","03AL007","03AL008","03AL009","03AL011","03AL012","03AL013"],"TCDL":["11CV57","11CV58","11CV25","11CV26","11CV27","02CV042","02CV001","02CV006","02CV007","02CV008","02CV010","02AL001"],"FILTRAGEM":["G20-52CV081","G20-52CV082","G20-52CV083","G20-52CV084","G20-52CV085","G20-52CV086","G12-53CV088","G12-53CV089","G12-53CV090","G12-53CV097","49CV115","49CV116"],"CONCENTRADOR 3":["05CV026","05CV027","05CV028","09CV030"],"MOAGEM 2":["G02-05CV006","G02-05CV004","G02-05CV005"],"MOAGEM 3":["G03-05CV028","G03-09CV030","G03-05CV026","G03-05CV027"]};
 
 let pendencias=[
-{id:"11CV23",tag:"11CV23",area:"MINA - Norte",situacao:"Vibração anormal no acionamento. Temperatura 15°C acima do normal.",background:"3 ocorrências nos últimos 7 dias. Manutenção preventiva há 15 dias.",avaliacao:"Risco de falha catastrófica em 24-48h.",recomendacao:"Inspeção detalhada do acionamento. Parar se vibração aumentar.",prioridade:"critical",status:"Em andamento",responsavel:"Marcelo O.",data:"19/03 11:20",turno:"A",supervisor:"Marcelo Oliveira"},
-{id:"Britador02",tag:"Britador 02",area:"BRITAGEM 2",situacao:"Vazamento em linha hidráulica. Perda de 2L/h.",background:"Mangueira desgastada. Peça em estoque.",avaliacao:"Risco de parada em 24h.",recomendacao:"Substituir mangueira na próxima parada.",prioridade:"high",status:"Monitoramento",responsavel:"Equipe B",data:"19/03 09:10",turno:"A",supervisor:"Marcelo Oliveira"},
-{id:"11LK02",tag:"11LK02",area:"MINA - Fazendão",situacao:"Ruído intermitente no acionamento.",background:"Ocorrência anterior com lubrificação.",avaliacao:"Monitorar evolução.",recomendacao:"Checklist de inspeção reforçada.",prioridade:"medium",status:"Aberto",responsavel:"Equipe A",data:"19/03 07:30",turno:"A",supervisor:"Marcelo Oliveira"},
-{id:"11CV56",tag:"11CV56",area:"MINA - Fazendão",situacao:"Aquecimento no rolamento.",background:"Temperatura elevada desde ontem.",avaliacao:"Monitorar a cada 2h.",recomendacao:"Verificar lubrificação.",prioridade:"medium",status:"Aberto",responsavel:"Turno C",data:"19/03 06:15",turno:"C",supervisor:"Fernanda Lima"},
-{id:"03CV014",tag:"03CV014",area:"BRITAGEM 3",situacao:"Desgaste acelerado das guias.",background:"Material com granulometria fora do padrão.",avaliacao:"Necessário ajuste no britador primário.",recomendacao:"Reprogramar manutenção preventiva.",prioridade:"low",status:"Aberto",responsavel:"Turno B",data:"18/03 14:00",turno:"B",supervisor:"Carlos Santos"}
+{id:"11CV23",tag:"11CV23",area:"MINA - Norte",situacao:"Vibração anormal no acionamento. Temperatura 15°C acima do normal.",background:"3 ocorrências nos últimos 7 dias. Manutenção preventiva há 15 dias.",avaliacao:"Risco de falha catastrófica em 24-48h.",recomendacao:"Inspeção detalhada do acionamento. Parar se vibração aumentar.",prioridade:"critical",criticidade:"imediato",os:"",status:"Em andamento",responsavel:"Marcelo O.",data:"19/03 11:20",turno:"A",supervisor:"Marcelo Oliveira"},
+{id:"Britador02",tag:"Britador 02",area:"BRITAGEM 2",situacao:"Vazamento em linha hidráulica. Perda de 2L/h.",background:"Mangueira desgastada. Peça em estoque.",avaliacao:"Risco de parada em 24h.",recomendacao:"Substituir mangueira na próxima parada.",prioridade:"high",criticidade:"dia",os:"3300229001",status:"Monitoramento",responsavel:"Equipe B",data:"19/03 09:10",turno:"A",supervisor:"Marcelo Oliveira"},
+{id:"11LK02",tag:"11LK02",area:"MINA - Fazendão",situacao:"Ruído intermitente no acionamento.",background:"Ocorrência anterior com lubrificação.",avaliacao:"Monitorar evolução.",recomendacao:"Checklist de inspeção reforçada.",prioridade:"medium",criticidade:"postergar",os:"",status:"Aberto",responsavel:"Equipe A",data:"19/03 07:30",turno:"A",supervisor:"Marcelo Oliveira"},
+{id:"11CV56",tag:"11CV56",area:"MINA - Fazendão",situacao:"Aquecimento no rolamento.",background:"Temperatura elevada desde ontem.",avaliacao:"Monitorar a cada 2h.",recomendacao:"Verificar lubrificação.",prioridade:"medium",criticidade:"dia",os:"",status:"Aberto",responsavel:"Turno C",data:"19/03 06:15",turno:"C",supervisor:"Fernanda Lima"},
+{id:"03CV014",tag:"03CV014",area:"BRITAGEM 3",situacao:"Desgaste acelerado das guias.",background:"Material com granulometria fora do padrão.",avaliacao:"Necessário ajuste no britador primário.",recomendacao:"Reprogramar manutenção preventiva.",prioridade:"low",criticidade:"dia",os:"",status:"Aberto",responsavel:"Turno B",data:"18/03 14:00",turno:"B",supervisor:"Carlos Santos"}
 ];
 
 let atividades=[
@@ -349,8 +350,11 @@ let ordens=[
 let acessos=[];
 
 let supervisorSelecionado="";
-let activeScreen="dashboard";
-let filters={search:"",areaPrincipal:"",subarea:"",equipamento:"",prioridade:"",criticidade:"",turno:"",letra:"",dataInicial:"",dataFinal:""};
+let activeScreen="sbar";
+let filters={search:"",areaPrincipal:"",subarea:"",equipamento:"",prioridade:"",criticidade:"",turno:"",letra:"",dataInicial:"",dataFinal:"",outros:""};
+let relatorioIncluir={resumo:true,pendCritAlt:true,pendTodas:false,atividades:true,whatsappAgrupar:"prioridade"};
+let relatorioSelPend={};
+let relatorioSelAtv={};
 
 const STORAGE_KEY="samarco_turno_v3";
 const FS_ROOT="passagem_turno_meta";
@@ -394,6 +398,41 @@ function salvar(){
   agendarSyncNuvem();
 }
 function carregar(){try{const d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d){if(d.pendencias)pendencias=d.pendencias;if(d.atividades)atividades=d.atividades;if(d.ordens)ordens=d.ordens}}catch(e){}}
+function migrarAtividadesLegado(){
+  if(!atividades||!atividades.length)return;
+  var n=0;
+  atividades.forEach(function(a){
+    if(!a||!a.id)return;
+    if(pendencias.some(function(p){return p.sourceAtividadeId===a.id}))return;
+    pendencias.unshift({
+      id:"mig-"+safeDocId(String(a.id)),
+      sourceAtividadeId:a.id,
+      tag:a.tag,
+      area:a.area,
+      situacao:a.descricao||"",
+      background:"",
+      avaliacao:"",
+      recomendacao:a.resultado||"",
+      prioridade:"medium",
+      criticidade:a.criticidade||"dia",
+      os:a.os||"",
+      status:a.status||"Concluído",
+      responsavel:a.supervisor||"",
+      data:a.data,
+      horaInicioTarefa:"",
+      horaFimTarefa:"",
+      horaInicioExec:a.horaInicioExec||"",
+      horaFimExec:a.horaFimExec||"",
+      turno:a.turno||"",
+      supervisor:a.supervisor||"",
+      letra:a.letra||"",
+      periodoInicial:a.periodoInicial||"",
+      periodoFinal:a.periodoFinal||""
+    });
+    n++;
+  });
+  if(n){salvar();showToast(n+" registro(s) de atividades incorporados aos pontos de monitoramento.","info")}
+}
 
 function agendarSyncNuvem(){
   if(_remoteApplying)return;
@@ -531,25 +570,59 @@ function initFirebaseAuth(){
 }
 
 const navItems=[
-{screen:"dashboard",icon:"📊",label:"Dashboard"},
-{screen:"onepage",icon:"🎯",label:"One Page Report"},
-{screen:"atividades",icon:"✅",label:"Atividades"},
-{screen:"sbar",icon:"📋",label:"Protocolo SBAR"},
-{screen:"kanban",icon:"📌",label:"T-Card / Kanban"},
-{screen:"oee",icon:"📈",label:"OEE Dashboard"},
-{screen:"historico",icon:"🕘",label:"Logbook Digital"},
-{screen:"documentos",icon:"📚",label:"Base de Conhecimento"},
+{screen:"sbar",icon:"📋",label:"Visão do turno"},
 {screen:"relatorio",icon:"📄",label:"Relatório de Turno"},
 {screen:"acesso",icon:"🔐",label:"Controle de Acesso"},
 ];
-const screenTitles={dashboard:"Dashboard Executivo",onepage:"One Page Report",atividades:"Atividades Executadas",sbar:"Protocolo SBAR",kanban:"T-Card / Kanban",oee:"OEE Dashboard",historico:"Logbook Digital",documentos:"Base de Conhecimento",relatorio:"Relatório de Turno",acesso:"Controle de Acesso"};
+const screenTitles={sbar:"Visão do turno",relatorio:"Relatório de Turno",acesso:"Controle de Acesso"};
 
 function getInitials(n){return n.split(" ").map(p=>p[0]).join("").slice(0,2).toUpperCase()||"SV"}
 function prioLabel(p){return{critical:"Crítico",high:"Alto",medium:"Médio",low:"Baixo"}[p]||p}
 function critLabel(c){return{imediato:"Agir de imediato",dia:"Ao longo do dia",postergar:"Pode postergar"}[c]||c||""}
 function prioClass(p){return p==="critical"?"s-open":p==="high"?"s-progress":"s-postpone"}
 function critClass(c){return c==="imediato"?"s-open":c==="dia"?"s-progress":"s-postpone"}
-function mapCrit(p){if(p.prioridade==="critical"||p.status==="Em andamento")return"imediato";if(p.prioridade==="high"||p.status==="Monitoramento")return"dia";return"postergar"}
+function mapCrit(p){
+  if(!p)return"postergar";
+  if(p.criticidade)return p.criticidade;
+  if(p.prioridade==="critical"||p.status==="Em andamento")return"imediato";
+  if(p.prioridade==="high"||p.status==="Monitoramento")return"dia";
+  return"postergar";
+}
+function formatHorarioLinha(p){
+  if(!p)return"—";
+  if(p.horaInicioExec||p.horaFimExec)return formatHorarioExec(p);
+  return formatHorarioTarefa(p);
+}
+function escHtml(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;")}
+function findPendenciaPorId(id){
+  const sid=String(id);
+  return pendencias.find(function(x){return x&&String(x.id)===sid});
+}
+/** ID seguro em atributo HTML (evita quebrar onclick com aspas / caracteres especiais). */
+function pendIdDataAttr(id){
+  return encodeURIComponent(JSON.stringify(id===undefined?null:id));
+}
+function parsePendIdDataAttr(raw){
+  if(raw==null||raw==="")return null;
+  try{return JSON.parse(decodeURIComponent(raw))}catch(e){return null}
+}
+function bindPendenciaEditDelegation(){
+  const sc=document.getElementById("screenContent");
+  if(!sc||sc._pendEditDelegation)return;
+  sc._pendEditDelegation=true;
+  sc.addEventListener("click",function(e){
+    const btn=e.target.closest("button.pend-btn-edit");
+    const tr=e.target.closest("tr.pend-row-edit");
+    const el=btn||tr;
+    if(!el)return;
+    if(tr&&!btn&&e.target.closest("button"))return;
+    const raw=el.getAttribute("data-pend-id");
+    if(raw==null||raw==="")return;
+    const id=parsePendIdDataAttr(raw);
+    if(btn){e.preventDefault();e.stopPropagation()}
+    openEdit(id);
+  });
+}
 
 function parseDataRegistro(s){
   if(s==null||s==="")return new Date(0);
@@ -575,6 +648,56 @@ function formatDataHoraExibicao(s){
   if(!d.getTime())return s?String(s):"—";
   return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
+function formatHorarioTarefa(p){
+  if(!p)return"—";
+  if(p.horaInicioTarefa||p.horaFimTarefa)return (p.horaInicioTarefa||"—")+" – "+(p.horaFimTarefa||"—");
+  return "—";
+}
+function formatHorarioExec(a){
+  if(!a)return"—";
+  if(a.horaInicioExec||a.horaFimExec)return (a.horaInicioExec||"—")+" – "+(a.horaFimExec||"—");
+  return "—";
+}
+function formatDataDMY(s){
+  if(s==null||String(s).trim()==="")return"—";
+  const t=String(s).trim();
+  const m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return m[3]+"/"+m[2]+"/"+m[1];
+  const d=parseDataRegistro(t);
+  if(d.getTime())return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
+  return t;
+}
+function buildUnifiedTurnoRows(){
+  const pend=filteredPend();
+  const rows=[];
+  pend.forEach(function(p){rows.push({kind:"pend",ref:p,sort:parseDataRegistro(p.data).getTime()||0})});
+  rows.sort(function(a,b){return b.sort-a.sort});
+  return{rows,pendN:pend.length,atvExtraN:0};
+}
+function filtroBasePend(p){
+  const f=filters;
+  if(f.areaPrincipal){const pp=p.area.includes(" - ")?p.area.split(" - ")[0]:p.area;if(pp!==f.areaPrincipal)return false}
+  if(f.subarea&&p.area!==f.subarea)return false;
+  if(f.equipamento&&p.tag!==f.equipamento)return false;
+  if(f.prioridade&&p.prioridade!==f.prioridade)return false;
+  if(f.criticidade&&mapCrit(p)!==f.criticidade)return false;
+  if(f.turno&&p.turno!==f.turno)return false;
+  if(f.letra&&p.letra!==f.letra)return false;
+  if(supervisorSelecionado&&(p.supervisor?.trim()!==supervisorSelecionado))return false;
+  if(f.search){const s=f.search.toLowerCase();if(![p.tag,p.situacao,p.supervisor,p.area,p.os||""].join(" ").toLowerCase().includes(s))return false}
+  if(f.outros&&String(f.outros).trim()){const o=String(f.outros).trim().toLowerCase();if(![p.tag,p.area||"",p.situacao||"",p.supervisor||"",p.os||""].join(" ").toLowerCase().includes(o))return false}
+  if(f.dataInicial||f.dataFinal)if(!passaFiltroIntervaloData(parseDataRegistro(p.data)))return false;
+  return true;
+}
+function countPendConcluidasFiltro(){
+  return pendencias.filter(function(p){return p.status==="Concluído"&&filtroBasePend(p)}).length;
+}
+function buildRelatorioRows(){
+  const pend=ordenarPendDataDesc(pendencias.filter(filtroBasePend));
+  const rows=pend.map(function(p){return{kind:"pend",ref:p,sort:parseDataRegistro(p.data).getTime()||0}});
+  rows.sort(function(a,b){return b.sort-a.sort});
+  return{rows};
+}
 
 function passaFiltroIntervaloData(ts){
   const f=filters;
@@ -594,6 +717,56 @@ function passaFiltroIntervaloData(ts){
 function ordenarPendDataDesc(arr){
   return arr.slice().sort(function(a,b){return parseDataRegistro(b.data)-parseDataRegistro(a.data)});
 }
+/** Mesma base da tabela/PDF: seleção + ordem cronológica (mais recente primeiro). */
+function pendenciasSelecionadasOrdenadas(){
+  relatorioEnsureSelectionDefaults();
+  return ordenarPendDataDesc(pendencias.filter(filtroBasePend).filter(function(p){return relatorioSelPend[p.id]!==false}));
+}
+function agruparPendPorPrioridade(pend){
+  const order=["critical","high","medium","low"];
+  const titulos={critical:"🔴 Prioridade CRÍTICA",high:"🟠 Prioridade ALTA",medium:"🟡 Prioridade MÉDIA",low:"⚪ Prioridade BAIXA"};
+  const b={critical:[],high:[],medium:[],low:[]};
+  pend.forEach(function(p){const k=b.hasOwnProperty(p.prioridade)?p.prioridade:"medium";b[k].push(p)});
+  const out=[];
+  order.forEach(function(k){if(b[k].length)out.push({titulo:titulos[k],items:ordenarPendDataDesc(b[k])})});
+  return out;
+}
+function agruparPendPorJanela(pend){
+  const order=["imediato","dia","postergar"];
+  const titulos={imediato:"⚡ Janela: Agir de imediato",dia:"📅 Janela: Ao longo do dia",postergar:"⏳ Janela: Pode postergar"};
+  const b={imediato:[],dia:[],postergar:[]};
+  pend.forEach(function(p){const k=b.hasOwnProperty(mapCrit(p))?mapCrit(p):"postergar";b[k].push(p)});
+  const out=[];
+  order.forEach(function(k){if(b[k].length)out.push({titulo:titulos[k],items:ordenarPendDataDesc(b[k])})});
+  return out;
+}
+function agruparPendPorStatus(pend){
+  const order=["Aberto","Em andamento","Monitoramento","Concluído"];
+  const titulos={"Aberto":"📂 Status: Aberto","Em andamento":"🔄 Status: Em andamento","Monitoramento":"👁 Status: Monitoramento","Concluído":"✅ Status: Concluído","Outros":"📋 Outros status"};
+  const b={"Aberto":[],"Em andamento":[],"Monitoramento":[],"Concluído":[],"Outros":[]};
+  pend.forEach(function(p){const k=order.indexOf(p.status)>=0?p.status:"Outros";b[k].push(p)});
+  const out=[];
+  order.concat(["Outros"]).forEach(function(k){if(b[k].length)out.push({titulo:titulos[k],items:ordenarPendDataDesc(b[k])})});
+  return out;
+}
+function montarListaCompletaWhatsApp(pend,modo){
+  const linha=function(p){
+    return "• "+formatDataHoraExibicao(p.data)+" | "+formatHorarioLinha(p)+" | "+critLabel(mapCrit(p))+" | "+prioLabel(p.prioridade)+" | OS "+(p.os||"—")+" — *"+p.tag+"* ("+p.area+") - "+(p.situacao||"").substring(0,70)+"\n";
+  };
+  const m=modo||"prioridade";
+  if(m==="nenhum"){
+    let t="";
+    pend.forEach(function(p){t+=linha(p)});
+    return t;
+  }
+  const grupos=m==="janela"?agruparPendPorJanela(pend):m==="status"?agruparPendPorStatus(pend):agruparPendPorPrioridade(pend);
+  let t="";
+  grupos.forEach(function(g){
+    t+="\n*"+g.titulo+"*\n";
+    g.items.forEach(function(p){t+=linha(p)});
+  });
+  return t;
+}
 function ordenarAtvDataDesc(arr){
   return arr.slice().sort(function(a,b){return parseDataRegistro(b.data)-parseDataRegistro(a.data)});
 }
@@ -603,17 +776,9 @@ function getAreas(){const a=new Set();Object.keys(equipamentosPorArea).forEach(k
 function getSubareas(ap){return Object.keys(equipamentosPorArea).filter(a=>a.startsWith(ap+" - ")).sort()}
 function getEquipamentos(ap,sub){let areas;if(sub)areas=[sub];else if(ap)areas=Object.keys(equipamentosPorArea).filter(a=>a===ap||a.startsWith(ap+" - ")||a.startsWith(ap+" "));else areas=Object.keys(equipamentosPorArea);const eqs=new Set();areas.forEach(a=>(equipamentosPorArea[a]||[]).forEach(eq=>eqs.add(eq)));return[...eqs].sort()}
 
-function filteredPend(){let r=pendencias.filter(p=>p.status!=="Concluído");const f=filters;if(f.areaPrincipal)r=r.filter(p=>{const pp=p.area.includes(" - ")?p.area.split(" - ")[0]:p.area;return pp===f.areaPrincipal});
-if(f.subarea)r=r.filter(p=>p.area===f.subarea);
-if(f.equipamento)r=r.filter(p=>p.tag===f.equipamento);
-if(f.prioridade)r=r.filter(p=>p.prioridade===f.prioridade);
-if(f.criticidade)r=r.filter(p=>mapCrit(p)===f.criticidade);
-if(f.turno)r=r.filter(p=>p.turno===f.turno);
-if(f.letra)r=r.filter(p=>p.letra===f.letra);
-if(supervisorSelecionado)r=r.filter(p=>p.supervisor?.trim()===supervisorSelecionado);
-if(f.search){const s=f.search.toLowerCase();r=r.filter(p=>[p.tag,p.situacao,p.supervisor,p.area].join(" ").toLowerCase().includes(s))}
-if(f.dataInicial||f.dataFinal)r=r.filter(function(p){return passaFiltroIntervaloData(parseDataRegistro(p.data))});
-return ordenarPendDataDesc(r)}
+function filteredPend(){
+  return ordenarPendDataDesc(pendencias.filter(filtroBasePend));
+}
 
 function filteredAtv(){let r=[...atividades];const f=filters;
 if(f.areaPrincipal)r=r.filter(a=>{const pp=a.area.includes(" - ")?a.area.split(" - ")[0]:a.area;return pp===f.areaPrincipal});
@@ -622,6 +787,7 @@ if(f.turno)r=r.filter(a=>a.turno===f.turno);
 if(f.letra)r=r.filter(a=>a.letra===f.letra);
 if(supervisorSelecionado)r=r.filter(a=>a.supervisor?.trim()===supervisorSelecionado);
 if(f.search){const s=f.search.toLowerCase();r=r.filter(a=>[a.tag,a.descricao,a.supervisor].join(" ").toLowerCase().includes(s))}
+if(f.outros&&String(f.outros).trim()){const o=String(f.outros).trim().toLowerCase();r=r.filter(function(a){return [a.tag,a.area||"",a.descricao||"",a.supervisor||""].join(" ").toLowerCase().includes(o)})}
 if(f.dataInicial||f.dataFinal)r=r.filter(function(a){return passaFiltroIntervaloData(parseDataRegistro(a.data))});
 return ordenarAtvDataDesc(r)}
 
@@ -633,11 +799,24 @@ function toggleSidebar(open){
   sb.classList.toggle("open",open);
   ov.classList.toggle("show",open);
 }
-function openModal(id){document.getElementById(id).classList.add("show");if(id==="supervisorModal")renderSupList();if(id==="newPendencia"||id==="newAtividade")populateAreaSelects()}
+function openModal(id){document.getElementById(id).classList.add("show");if(id==="supervisorModal")renderSupList();if(id==="newPendencia"){populateAreaSelects();toggleAreaOutro("p");toggleTagOutro("p")}}
+function toggleTagOutro(prefix){
+  const sel=document.getElementById(prefix+"Tag");
+  const row=document.getElementById(prefix+"TagOutroRow");
+  if(!sel||!row)return;
+  row.style.display=sel.value==="__OUTRO__"?"block":"none";
+}
+function toggleAreaOutro(prefix){
+  const sel=document.getElementById(prefix+"Area");
+  const row=document.getElementById(prefix+"AreaOutroRow");
+  if(!sel||!row)return;
+  row.style.display=sel.value==="__OUTRO_AREA__"?"block":"none";
+}
+function onAreaChange(prefix){updateTags(prefix);toggleAreaOutro(prefix)}
 function closeModal(id){document.getElementById(id).classList.remove("show")}
 function showToast(msg,type){const t=document.getElementById("toastEl");t.textContent=msg;t.style.borderLeftColor=type==="success"?"var(--sam-green)":type==="error"?"var(--sam-red)":"var(--sam-blue)";t.style.display="block";setTimeout(()=>t.style.display="none",3000)}
 
-function setScreen(s){activeScreen=s;document.querySelectorAll("#navMenu button").forEach(b=>b.classList.toggle("active",b.dataset.screen===s));document.getElementById("screenTitle").textContent=screenTitles[s]||s;render();
+function setScreen(s){activeScreen=s;document.querySelectorAll("#navMenu button").forEach(b=>b.classList.toggle("active",b.dataset.screen===s));document.getElementById("screenTitle").textContent=screenTitles[s]||s;const tg=document.getElementById("screenTagline");if(tg)tg.style.display=s==="sbar"?"block":"none";render();
   if(window.innerWidth<1024){toggleSidebar(false)}
 }
 
@@ -645,8 +824,9 @@ function buildNav(){const nav=document.getElementById("navMenu");nav.innerHTML="
 
 function renderFilters(){const el=document.getElementById("filtersArea");const areas=getAreas();const subs=filters.areaPrincipal==="MINA"?getSubareas("MINA"):[];
 const eqs=getEquipamentos(filters.areaPrincipal,filters.subarea);
-let h=`<div class="filters"><input type="search" id="filtroSearch" name="filtroSearch" autocomplete="off" placeholder="🔍 Pesquisar TAG, equipamento..." value="${filters.search}" oninput="filters.search=this.value;render()">`;
+let h=`<div class="filters"><input type="search" id="filtroSearch" name="filtroSearch" autocomplete="off" placeholder="🔍 Pesquisar TAG, equipamento..." value="${String(filters.search||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;")}" oninput="filters.search=this.value;render()">`;
 h+=`<div class="filtro-datas"><div><label for="filtroDataIni">Data inicial</label><input type="date" id="filtroDataIni" name="filtroDataIni" value="${filters.dataInicial||""}" onchange="filters.dataInicial=this.value;render()"></div><div><label for="filtroDataFim">Data final</label><input type="date" id="filtroDataFim" name="filtroDataFim" value="${filters.dataFinal||""}" onchange="filters.dataFinal=this.value;render()"></div><button type="button" class="btn-outline" style="padding:8px 12px;font-size:12px;align-self:flex-end" onclick="filters.dataInicial='';filters.dataFinal='';render()">Limpar datas</button></div>`;
+h+=`<div style="width:100%;margin-top:4px"><label for="filtroOutros" style="font-size:10px">Outro equipamento / texto livre</label><input type="text" id="filtroOutros" name="filtroOutros" placeholder="Filtra quando não encontrou na lista (TAG, área, texto...)" value="${String(filters.outros||"").replace(/"/g,"&quot;")}" oninput="filters.outros=this.value;render()"></div>`;
 h+=`<select id="filtroArea" name="filtroArea" onchange="filters.areaPrincipal=this.value;filters.subarea='';filters.equipamento='';render()"><option value="">Todas Áreas</option>${areas.map(a=>`<option ${filters.areaPrincipal===a?"selected":""}>${a}</option>`).join("")}</select>`;
 if(filters.areaPrincipal==="MINA"||subs.length)h+=`<select id="filtroSubarea" name="filtroSubarea" onchange="filters.subarea=this.value;filters.equipamento='';render()"><option value="">Subárea Mina</option>${subs.map(s=>`<option ${filters.subarea===s?"selected":""}>${s}</option>`).join("")}</select>`;
 h+=`<select id="filtroEquip" name="filtroEquip" onchange="filters.equipamento=this.value;render()"><option value="">Equipamentos</option>${eqs.map(e=>`<option ${filters.equipamento===e?"selected":""}>${e}</option>`).join("")}</select>`;
@@ -657,11 +837,14 @@ h+=`<select id="filtroLetra" name="filtroLetra" onchange="filters.letra=this.val
 h+=`</div>`;
 el.innerHTML=h}
 
-function updateSidebarCard(){const pend=filteredPend();
-document.getElementById("supAbertas").textContent=pend.length;
-document.getElementById("supCriticas").textContent=pend.filter(p=>p.prioridade==="critical").length;
-if(supervisorSelecionado){document.getElementById("supTurnoLabel").textContent=pend[0]?.turno?`Turno ${pend[0].turno}`:"Turno";document.getElementById("supHorario").textContent=pend[0]?.turno||"-";document.getElementById("supAvatar").textContent=getInitials(supervisorSelecionado);document.getElementById("supNome").textContent=supervisorSelecionado;document.getElementById("supSub").textContent="Supervisor"}
-else{document.getElementById("supTurnoLabel").textContent="Visão Geral";document.getElementById("supHorario").textContent="-";document.getElementById("supAvatar").textContent="TG";document.getElementById("supNome").textContent="Todos os supervisores";document.getElementById("supSub").textContent="Sem filtro"}}
+function updateSidebarCard(){
+  const pend=filteredPend();
+  const abertas=pend.filter(function(p){return p.status!=="Concluído"});
+  document.getElementById("supAbertas").textContent=abertas.length;
+  document.getElementById("supCriticas").textContent=abertas.filter(function(p){return p.prioridade==="critical"}).length;
+  const ref=abertas[0]||pend[0];
+  if(supervisorSelecionado){document.getElementById("supTurnoLabel").textContent=ref?.turno?`Turno ${ref.turno}`:"Turno";document.getElementById("supHorario").textContent=ref?.turno||"-";document.getElementById("supAvatar").textContent=getInitials(supervisorSelecionado);document.getElementById("supNome").textContent=supervisorSelecionado;document.getElementById("supSub").textContent="Supervisor"}
+  else{document.getElementById("supTurnoLabel").textContent="Visão Geral";document.getElementById("supHorario").textContent="-";document.getElementById("supAvatar").textContent="TG";document.getElementById("supNome").textContent="Todos os supervisores";document.getElementById("supSub").textContent="Sem filtro"}}
 
 function renderSupList(){const search=document.getElementById("supSearch").value.toLowerCase();const sups=getSupervisores();const filtered=search?sups.filter(n=>n.toLowerCase().includes(search)):sups;
 if(!search){document.getElementById("supChips").innerHTML=sups.slice(0,6).map(n=>`<button class="chip ${supervisorSelecionado===n?"active":""}" onclick="selectSupervisor('${n.replace(/'/g,"\\'")}')">${n.split(" ")[0]}</button>`).join("")}else{document.getElementById("supChips").innerHTML=""}
@@ -729,35 +912,62 @@ function updateNuvemUI(){
   }
 }
 
+// ========== RELATÓRIO — seleção por linha ==========
+function relatorioEnsureSelectionDefaults(){
+  pendencias.filter(filtroBasePend).forEach(function(p){if(relatorioSelPend[p.id]===undefined)relatorioSelPend[p.id]=true});
+}
+function relatorioMarcarPend(id,v){relatorioSelPend[id]=v;}
+function relatorioMarcarAtv(id,v){relatorioSelAtv[id]=v;}
+function relatorioTodosPend(v){pendencias.filter(filtroBasePend).forEach(function(p){relatorioSelPend[p.id]=v});render();}
+function relatorioTodosUnified(v){buildRelatorioRows().rows.forEach(function(row){relatorioSelPend[row.ref.id]=v});render();}
+function relatorioBulkSupervisor(nome,v){
+  nome=String(nome||"").trim();
+  pendencias.filter(filtroBasePend).forEach(function(p){if((p.supervisor||"").trim()===nome)relatorioSelPend[p.id]=v});
+  render();
+}
+function relatorioSupTodosMarcados(nome){
+  relatorioEnsureSelectionDefaults();
+  const pp=pendencias.filter(p=>filtroBasePend(p)&&(p.supervisor||"").trim()===nome);
+  if(!pp.length)return false;
+  return pp.every(p=>relatorioSelPend[p.id]!==false);
+}
+
 // ========== WHATSAPP ==========
 function gerarTextoRelatorio(){
-  const pend=filteredPend();const atv=filteredAtv();
-  const cr=pend.filter(p=>p.prioridade==="critical");
-  const hi=pend.filter(p=>p.prioridade==="high");
+  const pend=pendenciasSelecionadasOrdenadas();
+  const cr=ordenarPendDataDesc(pend.filter(function(p){return p.prioridade==="critical"}));
+  const hi=ordenarPendDataDesc(pend.filter(function(p){return p.prioridade==="high"}));
   const dataHoje=new Date().toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"});
-  let txt=`📋 *NAZA AUDITORIA - RELATÓRIO DE TURNO*\n`;
-  txt+=`📅 ${dataHoje}\n`;
-  txt+=`👤 Supervisor: ${supervisorSelecionado||"Visão Geral"}\n\n`;
-  txt+=`📊 *RESUMO:*\n`;
-  txt+=`🔴 Críticas: ${cr.length}\n`;
-  txt+=`🟠 Altas: ${hi.length}\n`;
-  txt+=`📌 Total Pendências: ${pend.length}\n`;
-  txt+=`✅ Atividades: ${atv.length}\n\n`;
-  if(cr.length){
-    txt+=`⚠️ *PENDÊNCIAS CRÍTICAS:*\n`;
-    cr.forEach(p=>{txt+=`• ${formatDataHoraExibicao(p.data)} — *${p.tag}* (${p.area}) - ${(p.situacao||"").substring(0,80)}\n  Resp: ${p.responsavel}\n`});
-    txt+=`\n`;
+  const R=relatorioIncluir;
+  const modoWA=R.whatsappAgrupar||"prioridade";
+  let txt="📋 *RELATÓRIO DE TURNO GMG*\n";
+  txt+="📅 "+dataHoje+"\n";
+  txt+="👤 Supervisor: "+(supervisorSelecionado||"Visão Geral")+"\n\n";
+  if(R.resumo){
+    txt+="📊 *RESUMO:*\n";
+    txt+="🔴 Críticas (selecionadas): "+cr.length+"\n";
+    txt+="🟠 Altas (selecionadas): "+hi.length+"\n";
+    txt+="📌 Total pontos marcados (✓): "+pend.length+"\n\n";
   }
-  if(hi.length){
-    txt+=`🟡 *PENDÊNCIAS ALTAS:*\n`;
-    hi.forEach(p=>{txt+=`• ${formatDataHoraExibicao(p.data)} — *${p.tag}* (${p.area}) - ${(p.situacao||"").substring(0,80)}\n`});
-    txt+=`\n`;
+  if(R.pendCritAlt){
+    if(cr.length){
+      txt+="⚠️ *PENDÊNCIAS CRÍTICAS* _(mais recente primeiro):_\n";
+      cr.forEach(function(p){txt+="• "+formatDataHoraExibicao(p.data)+" | "+formatHorarioLinha(p)+" | OS "+(p.os||"—")+" | *"+p.tag+"* ("+p.area+") - "+(p.situacao||"").substring(0,80)+"\n  Resp: "+p.responsavel+"\n"});
+      txt+="\n";
+    }
+    if(hi.length){
+      txt+="🟡 *PENDÊNCIAS ALTAS* _(mais recente primeiro):_\n";
+      hi.forEach(function(p){txt+="• "+formatDataHoraExibicao(p.data)+" | "+formatHorarioLinha(p)+" — *"+p.tag+"* ("+p.area+") - "+(p.situacao||"").substring(0,80)+"\n"});
+      txt+="\n";
+    }
   }
-  if(atv.length){
-    txt+=`✅ *ATIVIDADES EXECUTADAS:*\n`;
-    atv.slice(0,10).forEach(a=>{txt+=`• ${formatDataHoraExibicao(a.data)} — *${a.tag}* - ${(a.descricao||"").substring(0,60)}\n`});
+  if(R.pendTodas&&pend.length){
+    const legenda=modoWA==="nenhum"?"_(mesma ordem da tabela / PDF — mais recente primeiro):_":"_(agrupado: dentro de cada bloco, mais recente primeiro):_";
+    txt+="📌 *TODOS OS PONTOS (marcados no ✓)* "+legenda+"\n";
+    txt+=montarListaCompletaWhatsApp(pend,modoWA);
+    txt+="\n";
   }
-  txt+=`\n_Gerado por Naza Auditoria_`;
+  txt+="\n_GMG • Desenvolvido por Nazareno_";
   return txt;
 }
 
@@ -783,101 +993,73 @@ function copiarRelatorio(){
 }
 
 // ========== SCREENS ==========
-function renderDashboard(){const pend=filteredPend();const cr=pend.filter(p=>p.prioridade==="critical");const hi=pend.filter(p=>p.prioridade==="high");const md=pend.filter(p=>p.prioridade==="medium"||p.prioridade==="low");
-let h=`<div class="grid-3" style="margin-bottom:20px">
-<div class="card kpi" onclick="filters.prioridade='critical';render()" style="cursor:pointer"><div class="bar" style="background:var(--sam-red)"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Críticas</h3><div style="font-size:28px;font-weight:800;margin-top:4px">${cr.length}</div><p style="font-size:11px;color:var(--muted-fg)">Ação imediata</p></div>
-<div class="card kpi" onclick="filters.prioridade='';render()" style="cursor:pointer"><div class="bar" style="background:var(--sam-blue)"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Total Pendências</h3><div style="font-size:28px;font-weight:800;margin-top:4px">${pend.length}</div><p style="font-size:11px;color:var(--muted-fg)">Abertas no turno</p></div>
-<div class="card kpi" onclick="setScreen('sbar')" style="cursor:pointer"><div class="bar" style="background:var(--sam-green)"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Conformidade SBAR</h3><div style="font-size:28px;font-weight:800;margin-top:4px">96%</div><p style="font-size:11px;color:var(--muted-fg)">Padrão</p></div>
+function renderSBAR(){const pend=filteredPend();const crAbertas=pend.filter(p=>p.prioridade==="critical"&&p.status!=="Concluído");const U=buildUnifiedTurnoRows();const nConc=countPendConcluidasFiltro();
+let h=`<div class="grid-3" style="margin-bottom:16px">
+<div class="card kpi" onclick="filters.prioridade='critical';render()" style="cursor:pointer"><div class="bar" style="background:var(--sam-red)"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Críticas</h3><div style="font-size:28px;font-weight:800;margin-top:4px">${crAbertas.length}</div><p style="font-size:11px;color:var(--muted-fg)">Abertas</p></div>
+<div class="card kpi" onclick="filters.prioridade='';render()" style="cursor:pointer"><div class="bar" style="background:var(--sam-blue)"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Total (filtro)</h3><div style="font-size:28px;font-weight:800;margin-top:4px">${U.pendN}</div><p style="font-size:11px;color:var(--muted-fg)">Todos os status</p></div>
+<div class="card kpi" onclick="document.getElementById('secTabelaTurno').scrollIntoView({behavior:'smooth'})" style="cursor:pointer"><div class="bar" style="background:var(--sam-green)"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Concluídas</h3><div style="font-size:28px;font-weight:800;margin-top:4px">${nConc}</div><p style="font-size:11px;color:var(--muted-fg)">No filtro atual</p></div>
 </div>`;
-h+=`<div class="card" style="padding:16px;margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:15px;font-weight:700">⚡ Leitura Rápida do Turno</h3><span class="status-pill s-postpone">${pend.length} pendências</span></div>`;
-if(!pend.length)h+=`<p style="text-align:center;color:var(--muted-fg);padding:16px;font-size:13px">Nenhuma pendência no filtro atual.</p>`;
-else{h+=`<div style="max-height:400px;overflow-y:auto" class="scrollbar-thin">`;pend.slice(0,10).forEach(p=>{
-h+=`<div class="qr-item qr-${p.prioridade==="critical"?"critical":p.prioridade==="high"?"high":"medium"}" onclick="showDetail('${p.id}')">
-<div style="display:flex;justify-content:space-between;align-items:start;gap:8px"><div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:8px"><strong style="font-size:13px">${p.tag}</strong><span style="font-size:11px;color:var(--muted-fg)">${p.area}</span></div><p style="font-size:11px;color:var(--muted-fg);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.situacao}</p></div><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></div>
-<div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--muted-fg)"><span>👤 ${p.responsavel}</span><span>⏰ ${formatDataHoraExibicao(p.data)}</span><span>📋 ${p.status}</span></div></div>`});h+=`</div>`}
-h+=`</div>`;
-h+=`<div class="grid-3">`;
-[[cr,"🔴 Ação Imediata","var(--sam-red)"],[hi,"🟡 Monitoramento","var(--sam-orange)"],[md,"🔵 Programado","var(--sam-green)"]].forEach(([items,title,color])=>{
-h+=`<div class="kanban-col" style="background:${color}08;border-color:${color}20"><div style="display:flex;justify-content:space-between;margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid ${color}40"><h4 style="font-size:11px;font-weight:700;text-transform:uppercase">${title}</h4><span class="card" style="padding:2px 8px;font-size:11px;font-weight:700">${items.length}</span></div>`;
-ordenarPendDataDesc(items).slice(0,3).forEach(p=>{h+=`<div class="kanban-card" onclick="showDetail('${p.id}')" style="cursor:pointer"><strong style="font-size:12px">${p.tag}</strong><p style="font-size:10px;color:var(--muted-fg);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.situacao}</p><p style="font-size:9px;color:var(--muted-fg);margin-top:4px">${formatDataHoraExibicao(p.data)}</p></div>`});h+=`</div>`});
-h+=`</div>`;
+h+=`<div class="card" id="secTabelaTurno"><div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--border)"><div><h3 class="heading-monitoramento" style="font-size:15px;margin:0">Pontos de Monitoramento</h3><p style="font-size:11px;color:var(--muted-fg);margin-top:4px">${U.rows.length} registro(s) no filtro • todos os status • toque na linha para editar</p></div><div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" class="btn-primary" onclick="openModal('newPendencia')">+ Novo ponto</button></div></div><div style="overflow-x:auto"><table><thead><tr><th>Abertura</th><th>Data início</th><th>Data final</th><th>Horário</th><th>TAG</th><th>Área</th><th style="min-width:120px">Descrição</th><th>Prioridade</th><th>Janela</th><th>Status</th><th>Responsável</th><th>Supervisor</th><th>O.S.</th><th>Ações</th></tr></thead><tbody>`;
+if(!U.rows.length)h+=`<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--muted-fg)">Nada no filtro atual.</td></tr>`;
+U.rows.forEach(function(row){
+  const p=row.ref;
+  const jc=mapCrit(p);
+  const pid=pendIdDataAttr(p.id);
+  h+=`<tr class="pend-row-edit" data-pend-id="${pid}" style="cursor:pointer"><td style="white-space:nowrap;font-size:12px">${formatDataHoraExibicao(p.data)}</td><td style="white-space:nowrap;font-size:12px">${formatDataDMY(p.periodoInicial)}</td><td style="white-space:nowrap;font-size:12px">${formatDataDMY(p.periodoFinal)}</td><td style="white-space:nowrap;font-size:11px">${formatHorarioLinha(p)}</td><td style="font-weight:700">${p.tag}</td><td style="font-size:12px">${p.area}</td><td style="color:var(--muted-fg);font-size:12px">${(p.situacao||"").substring(0,48)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td><span class="status-pill ${critClass(jc)}">${critLabel(jc)}</span></td><td>${p.status}</td><td style="font-size:12px">${p.responsavel||""}</td><td style="font-size:12px">${p.supervisor||""}</td><td style="font-size:12px">${p.os||"—"}</td><td><button type="button" class="btn-outline pend-btn-edit" style="font-size:11px;padding:4px 8px" data-pend-id="${pid}">Editar</button></td></tr>`;
+});
+h+=`</tbody></table></div></div>`;
 return h}
 
-function renderSBAR(){const pend=filteredPend();
-let h=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Protocolo SBAR - Todos os Registros</h3><span class="status-pill s-postpone">${pend.length} registros</span></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th style="min-width:200px">Situação</th><th>Prioridade</th><th>Status</th><th>Responsável</th><th>Ações</th></tr></thead><tbody>`;
-pend.forEach(p=>{h+=`<tr onclick="showDetail('${p.id}')" style="cursor:pointer"><td style="white-space:nowrap">${formatDataHoraExibicao(p.data)}</td><td style="font-weight:700">${p.tag}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,40)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td>${p.status}</td><td style="color:var(--muted-fg)">${p.responsavel}</td><td><button class="btn-outline" style="font-size:11px;padding:4px 8px" onclick="event.stopPropagation();openEdit('${p.id}')">Editar</button></td></tr>`});
-if(!pend.length)h+=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted-fg)">Nenhum registro no filtro atual.</td></tr>`;
-h+=`</tbody></table></div></div>`;return h}
-
-function renderAtividades(){const atv=filteredAtv();
-let h=`<div style="background:var(--sam-blue-light);color:var(--sam-blue);padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;margin-bottom:16px">Registro e consulta de atividades executadas no turno, com rastreabilidade completa.</div>`;
-h+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Atividades Executadas</h3><span class="status-pill s-postpone">${atv.length}</span></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th>Área</th><th>Supervisor</th><th>Atividade</th><th>Criticidade</th><th>O.S.</th></tr></thead><tbody>`;
-atv.forEach(a=>{h+=`<tr onclick="showAtvDetail('${a.id}')" style="cursor:pointer"><td style="white-space:nowrap">${formatDataHoraExibicao(a.data)}</td><td style="font-weight:700">${a.tag}</td><td style="color:var(--muted-fg)">${a.area}</td><td style="color:var(--muted-fg)">${a.supervisor}</td><td style="color:var(--muted-fg)">${(a.descricao||"").substring(0,50)}</td><td><span class="status-pill ${critClass(a.criticidade)}">${critLabel(a.criticidade)}</span></td><td style="color:var(--muted-fg)">${a.os||"-"}</td></tr>`});
-if(!atv.length)h+=`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted-fg)">Nenhuma atividade no filtro atual.</td></tr>`;
-h+=`</tbody></table></div></div>`;return h}
-
-function renderKanban(){const pend=filteredPend();const im=pend.filter(p=>p.prioridade==="critical");const mo=pend.filter(p=>p.prioridade==="high");const pr=pend.filter(p=>p.prioridade==="medium"||p.prioridade==="low");
-let h=`<div class="grid-3">`;
-[[im,"🔴 Ação Imediata","var(--sam-red)"],[mo,"🟡 Monitoramento","var(--sam-orange)"],[pr,"🔵 Programado","var(--sam-green)"]].forEach(([items,title,color])=>{
-h+=`<div class="kanban-col" style="background:${color}08;border-color:${color}20"><div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid ${color}40"><h4 style="font-size:11px;font-weight:700;text-transform:uppercase">${title}</h4><span class="card" style="padding:2px 8px;font-size:11px;font-weight:700">${items.length}</span></div>`;
-ordenarPendDataDesc(items).forEach(p=>{h+=`<div class="kanban-card" onclick="showDetail('${p.id}')" style="cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px"><strong style="font-size:12px">${p.tag}</strong><span class="status-pill ${prioClass(p.prioridade)}" style="font-size:10px">${prioLabel(p.prioridade)}</span></div><p style="font-size:10px;color:var(--muted-fg);margin-top:4px">${p.situacao}</p><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--muted-fg)"><span>👤 ${p.responsavel}</span><span>⏰ ${formatDataHoraExibicao(p.data)}</span></div></div>`});h+=`</div>`});
-h+=`</div>`;return h}
-
-function renderOnePage(){const pend=filteredPend();const atv=filteredAtv();
-const now=pend.filter(p=>mapCrit(p)==="imediato");const today=pend.filter(p=>mapCrit(p)==="dia");const later=pend.filter(p=>mapCrit(p)==="postergar");
-let h=`<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px">
-<div style="background:linear-gradient(135deg,var(--sam-navy),var(--sam-blue));color:#fff;padding:20px;border-radius:var(--radius)"><h3 style="font-size:18px;font-weight:700;margin-bottom:4px">One Page Report</h3><p style="font-size:13px;opacity:.9;margin-bottom:12px">Supervisor: ${supervisorSelecionado||"visão geral"} • Pendências: ${pend.length} • Atividades: ${atv.length}</p>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><button onclick="filters.criticidade='imediato';render()" style="padding:6px 12px;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:11px;font-weight:600;color:#fff;background:transparent;cursor:pointer">Ver imediatas</button><button onclick="filters.criticidade='dia';render()" style="padding:6px 12px;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:11px;font-weight:600;color:#fff;background:transparent;cursor:pointer">Ver hoje</button><button onclick="filters.criticidade='postergar';render()" style="padding:6px 12px;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:11px;font-weight:600;color:#fff;background:transparent;cursor:pointer">Ver postergáveis</button></div></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${[[now.length,"Imediato"],[today.length,"Ao longo do dia"],[later.length,"Postergar"],[atv.length,"Executadas"]].map(([v,l])=>`<div class="card" style="padding:12px;text-align:center"><div style="font-size:22px;font-weight:800">${v}</div><div style="font-size:9px;text-transform:uppercase;font-weight:600;color:var(--muted-fg)">${l}</div></div>`).join("")}</div></div>`;
-h+=`<div class="grid-3" style="margin-bottom:20px">`;
-[[now,"Atacar agora","var(--sam-red)"],[today,"Ao longo do dia","var(--sam-orange)"],[later,"Pode postergar","var(--sam-blue)"]].forEach(([items,title,color])=>{
-h+=`<div class="card" style="padding:16px;border-top:4px solid ${color}"><h3 style="font-size:13px;font-weight:700;margin-bottom:12px">${title}</h3><ul style="list-style:none;padding:0">`;
-items.slice(0,6).forEach(p=>{h+=`<li style="font-size:11px;margin-bottom:8px"><span style="color:var(--muted-fg);font-size:10px">${formatDataHoraExibicao(p.data)}</span><br><strong>${p.tag}</strong> • ${p.area}<br><span style="color:var(--muted-fg)">${(p.situacao||"").substring(0,80)}</span></li>`});
-if(!items.length)h+=`<li style="font-size:11px;color:var(--muted-fg)">Nenhum item</li>`;h+=`</ul></div>`});
-h+=`</div>`;
-h+=`<div class="card" style="padding:16px"><h3 style="font-size:13px;font-weight:700;margin-bottom:12px">Últimas atividades executadas</h3>`;
-atv.slice(0,6).forEach(a=>{h+=`<div style="background:var(--muted);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border)"><strong style="font-size:12px">${a.tag} • ${formatDataHoraExibicao(a.data)}</strong><span style="display:block;font-size:11px;color:var(--muted-fg)">${a.area} • ${a.supervisor}</span><span style="display:block;font-size:11px;color:var(--muted-fg)">${a.descricao}</span></div>`});
-if(!atv.length)h+=`<p style="text-align:center;color:var(--muted-fg);font-size:12px;padding:16px">Nenhuma atividade</p>`;
-h+=`</div>`;return h}
-
-function renderOEE(){const pend=filteredPend();
-let h=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px">`;
-[["Disponibilidade","92.3%",true],["Performance","88.7%",false],["Qualidade","97.1%",true],["OEE Global","79.8%",false]].forEach(([l,v,ok])=>{
-h+=`<div class="card kpi" style="text-align:center;${ok?"background:var(--sam-green-light)":""}"><div class="bar" style="background:${ok?"var(--sam-green)":"var(--sam-blue)"}"></div><h3 style="font-size:11px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">${l}</h3><div style="font-size:28px;font-weight:800;margin-top:4px">${v}</div></div>`});
-h+=`</div><div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Perdas por Equipamento</h3></div><div style="overflow-x:auto"><table><thead><tr><th>Equipamento</th><th>OEE</th><th>Perda</th></tr></thead><tbody>`;
-pend.slice(0,5).forEach(p=>{h+=`<tr><td style="font-weight:700">${p.tag}</td><td>${p.prioridade==="critical"?"63%":p.prioridade==="high"?"80%":"85%"}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,40)}</td></tr>`});
-h+=`</tbody></table></div></div>`;return h}
-
-function renderLogbook(){return`<div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Logbook Digital - Histórico Auditável</h3></div><div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:13px"><p>O histórico será preenchido automaticamente conforme registros forem criados.</p><p style="margin-top:8px;font-size:11px">Use os filtros de data e supervisor para localizar registros específicos.</p></div></div>`}
-
-function renderDocumentos(){return`<div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h3 style="font-size:15px;font-weight:700">Base de Conhecimento</h3></div><div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:13px"><p>Documentos técnicos e procedimentos vinculados às pendências.</p><p style="margin-top:8px;font-size:11px">Conforme novos registros são adicionados, os documentos relevantes aparecerão aqui.</p></div></div>`}
-
-function renderRelatorio(){const pend=filteredPend();const atv=filteredAtv();const cr=pend.filter(p=>p.prioridade==="critical");const hi=pend.filter(p=>p.prioridade==="high");
+function renderRelatorio(){relatorioEnsureSelectionDefaults();
+const pendAll=pendencias.filter(filtroBasePend);
+const pendSel=pendAll.filter(p=>relatorioSelPend[p.id]!==false);
+const Urep=buildRelatorioRows();
+const cr=pendSel.filter(p=>p.prioridade==="critical");const hi=pendSel.filter(p=>p.prioridade==="high");
+const crAll=pendAll.filter(p=>p.prioridade==="critical");const hiAll=pendAll.filter(p=>p.prioridade==="high");
+const conclAll=pendAll.filter(p=>p.status==="Concluído").length;
 const dataHoje=new Date().toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"});
-let h=`<div class="report-header"><h3 style="font-size:20px;font-weight:800;margin-bottom:4px">📄 Relatório de Passagem de Turno</h3><p style="font-size:13px;opacity:.9">${dataHoje} • ${supervisorSelecionado||"Visão Geral"}</p></div>`;
+const R=relatorioIncluir;
+let h=`<div class="report-header"><h3 style="font-size:20px;font-weight:800;margin-bottom:4px">📄 Relatório de Turno GMG</h3><p style="font-size:13px;opacity:.9">${dataHoje} • ${supervisorSelecionado||"Visão Geral"}</p></div>`;
+h+=`<div class="card no-print" style="padding:16px;margin-bottom:16px"><h4 style="font-size:13px;font-weight:700;margin-bottom:10px">Blocos no texto (WhatsApp / copiar)</h4>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" ${R.resumo?"checked":""} onchange="relatorioIncluir.resumo=this.checked"> Resumo (totais dos ✓ abaixo)</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" ${R.pendCritAlt?"checked":""} onchange="relatorioIncluir.pendCritAlt=this.checked"> Seção críticas / altas</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" ${R.pendTodas?"checked":""} onchange="relatorioIncluir.pendTodas=this.checked"> Lista completa (pontos marcados)</label>
+</div>
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+<label for="whatsappAgruparSel" style="font-size:11px;font-weight:600;color:var(--muted-fg);display:block;margin-bottom:6px">Texto WhatsApp / copiar — ordem da lista completa</label>
+<select id="whatsappAgruparSel" style="width:100%;max-width:100%;padding:8px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border)" onchange="relatorioIncluir.whatsappAgrupar=this.value;render()">
+<option value="nenhum" ${(R.whatsappAgrupar||"prioridade")==="nenhum"?"selected":""}>Igual à tabela/PDF (só cronológico, mais recente primeiro)</option>
+<option value="prioridade" ${(R.whatsappAgrupar||"prioridade")==="prioridade"?"selected":""}>Agrupar por prioridade (em cada grupo: mais recente primeiro)</option>
+<option value="janela" ${R.whatsappAgrupar==="janela"?"selected":""}>Agrupar por janela de ataque (em cada grupo: mais recente primeiro)</option>
+<option value="status" ${R.whatsappAgrupar==="status"?"selected":""}>Agrupar por status (em cada grupo: mais recente primeiro)</option>
+</select>
+<p style="font-size:10px;color:var(--muted-fg);margin-top:8px;margin-bottom:0">Críticas/altas no texto seguem sempre a data (mais recente primeiro). O PDF continua na ordem da tabela.</p>
+</div>
+<p style="font-size:11px;color:var(--muted-fg);margin-top:10px">Inclui abertos e concluídos que passam no filtro. Use os ✓ nas linhas para o texto/WhatsApp. Em Controle de Acesso, marque o supervisor para incluir tudo dele.</p></div>`;
 h+=`<div class="grid-2" style="margin-bottom:20px">
-<div class="card" style="padding:16px"><h4 style="font-size:13px;font-weight:700;margin-bottom:12px">📊 Resumo Executivo</h4>
+<div class="card" style="padding:16px"><h4 style="font-size:13px;font-weight:700;margin-bottom:12px">📊 Resumo (conforme seleção)</h4>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-<div style="background:var(--sam-red-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-red)">${cr.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-red)">CRÍTICAS</div></div>
-<div style="background:var(--sam-orange-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-orange)">${hi.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-orange)">ALTAS</div></div>
-<div style="background:var(--sam-blue-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-blue)">${pend.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-blue)">TOTAL PEND.</div></div>
-<div style="background:var(--sam-green-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-green)">${atv.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-green)">ATIVIDADES</div></div>
+<div style="background:var(--sam-red-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-red)">${crAll.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-red)">CRÍTICAS (filtro)</div></div>
+<div style="background:var(--sam-orange-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-orange)">${hiAll.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-orange)">ALTAS (filtro)</div></div>
+<div style="background:var(--sam-blue-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-blue)">${pendSel.length}</div><div style="font-size:10px;font-weight:600;color:var(--sam-blue)">NO ENVIO (✓)</div></div>
+<div style="background:var(--sam-green-light);padding:12px;border-radius:8px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--sam-green)">${conclAll}</div><div style="font-size:10px;font-weight:600;color:var(--sam-green)">CONCLUÍDOS (filtro)</div></div>
 </div></div>
-<div class="card" style="padding:16px"><h4 style="font-size:13px;font-weight:700;margin-bottom:12px">📤 Enviar / Exportar</h4>
-<p style="font-size:12px;color:var(--muted-fg);margin-bottom:12px">Envie o relatório por WhatsApp, copie ou exporte.</p>
+<div class="card no-print" style="padding:16px"><h4 style="font-size:13px;font-weight:700;margin-bottom:12px">📤 Enviar / Exportar</h4>
+<p style="font-size:12px;color:var(--muted-fg);margin-bottom:12px">PDF: Imprimir → “Salvar como PDF”. O layout usa <strong>paisagem</strong> para caber todas as colunas; se não abrir assim, escolha Paisagem na janela de impressão. Rodapé “Desenvolvido por Nazareno” no canto.</p>
 <button class="btn-whatsapp" onclick="enviarWhatsApp()" style="width:100%;margin-bottom:8px;justify-content:center">📱 Enviar via WhatsApp</button>
 <button class="btn-whatsapp" onclick="enviarWhatsAppNumero()" style="width:100%;margin-bottom:8px;justify-content:center;background:#128C7E">📞 Enviar para número</button>
-<button class="btn-outline" onclick="copiarRelatorio()" style="width:100%;margin-bottom:8px">📋 Copiar Relatório</button>
-<button class="btn-outline" onclick="window.print()" style="width:100%;margin-bottom:8px">🖨️ Imprimir</button>
+<button class="btn-outline" onclick="copiarRelatorio()" style="width:100%;margin-bottom:8px">📋 Copiar texto</button>
+<button class="btn-outline" onclick="window.print()" style="width:100%;margin-bottom:8px">🖨️ PDF / Imprimir</button>
 <button class="btn-outline" onclick="exportarBackup()" style="width:100%">📤 Exportar JSON</button>
 </div></div>`;
-h+=`<div class="card" style="margin-bottom:20px"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">🔴 Pendências Críticas e Altas</h4></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th>Área</th><th>Situação</th><th>Prioridade</th><th>Responsável</th></tr></thead><tbody>`;
-pend.filter(p=>p.prioridade==="critical"||p.prioridade==="high").forEach(p=>{h+=`<tr><td style="white-space:nowrap">${formatDataHoraExibicao(p.data)}</td><td style="font-weight:700">${p.tag}</td><td>${p.area}</td><td style="color:var(--muted-fg)">${(p.situacao||"").substring(0,60)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td>${p.responsavel}</td></tr>`});
-if(!pend.filter(p=>p.prioridade==="critical"||p.prioridade==="high").length)h+=`<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted-fg)">Nenhuma pendência crítica/alta.</td></tr>`;
-h+=`</tbody></table></div></div>`;
-h+=`<div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">✅ Atividades Executadas</h4></div><div style="overflow-x:auto"><table><thead><tr><th>Data</th><th>TAG</th><th>Área</th><th>Descrição</th><th>O.S.</th></tr></thead><tbody>`;
-atv.forEach(a=>{h+=`<tr><td style="white-space:nowrap">${formatDataHoraExibicao(a.data)}</td><td style="font-weight:700">${a.tag}</td><td>${a.area}</td><td style="color:var(--muted-fg)">${(a.descricao||"").substring(0,50)}</td><td>${a.os||"-"}</td></tr>`});
-if(!atv.length)h+=`<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted-fg)">Nenhuma atividade.</td></tr>`;
+h+=`<div class="card" style="margin-bottom:20px"><div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:16px;border-bottom:1px solid var(--border)"><div><h4 class="heading-monitoramento" style="font-size:13px;margin:0">📌 Pontos de Monitoramento (relatório)</h4><p style="font-size:11px;color:var(--muted-fg);margin-top:4px">${Urep.rows.length} linha(s) • mesmo filtro da Visão do turno</p></div><div class="no-print" style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" class="btn-outline" style="font-size:11px;padding:6px 10px" onclick="relatorioTodosUnified(true)">Marcar todas</button><button type="button" class="btn-outline" style="font-size:11px;padding:6px 10px" onclick="relatorioTodosUnified(false)">Desmarcar todas</button><button type="button" class="btn-outline" style="font-size:11px;padding:6px 10px" onclick="relatorioTodosPend(true)">✓ todos do filtro</button></div></div><div style="overflow-x:auto"><table><thead><tr><th style="width:36px" class="no-print">✓</th><th>Abertura</th><th>Data início</th><th>Data final</th><th>Horário</th><th>TAG</th><th>Área</th><th>Descrição</th><th>Prioridade</th><th>Janela</th><th>Status</th><th>Resp.</th><th>Sup.</th><th>O.S.</th></tr></thead><tbody>`;
+if(!Urep.rows.length)h+=`<tr><td colspan="14" style="text-align:center;padding:16px;color:var(--muted-fg)">Nada no filtro atual.</td></tr>`;
+Urep.rows.forEach(function(row){
+  const p=row.ref;
+  const jc=mapCrit(p);
+  h+=`<tr><td class="no-print" onclick="event.stopPropagation()"><input type="checkbox" ${relatorioSelPend[p.id]!==false?"checked":""} onchange='relatorioMarcarPend(${JSON.stringify(p.id)},this.checked)' aria-label="Incluir no relatório"></td><td style="white-space:nowrap;font-size:12px">${formatDataHoraExibicao(p.data)}</td><td style="white-space:nowrap;font-size:12px">${formatDataDMY(p.periodoInicial)}</td><td style="white-space:nowrap;font-size:12px">${formatDataDMY(p.periodoFinal)}</td><td style="white-space:nowrap;font-size:11px">${formatHorarioLinha(p)}</td><td style="font-weight:700">${p.tag}</td><td style="font-size:12px">${p.area}</td><td style="color:var(--muted-fg);font-size:12px">${(p.situacao||"").substring(0,40)}</td><td><span class="status-pill ${prioClass(p.prioridade)}">${prioLabel(p.prioridade)}</span></td><td><span class="status-pill ${critClass(jc)}">${critLabel(jc)}</span></td><td style="font-size:12px">${p.status}</td><td style="font-size:12px">${p.responsavel||""}</td><td style="font-size:12px">${p.supervisor||""}</td><td style="font-size:12px">${p.os||"—"}</td></tr>`;
+});
 h+=`</tbody></table></div></div>`;
 return h}
 
@@ -889,9 +1071,10 @@ let h=`<div class="card" style="padding:16px;margin-bottom:20px"><div style="dis
 <div class="card" style="padding:12px;text-align:center;border-top:3px solid var(--sam-green)"><div style="font-size:24px;font-weight:800">${acessos.length}</div><div style="font-size:10px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Acessos Hoje</div></div>
 <div class="card" style="padding:12px;text-align:center;border-top:3px solid var(--sam-yellow)"><div style="font-size:24px;font-weight:800">${supervisorSelecionado?"1":"0"}</div><div style="font-size:10px;font-weight:600;color:var(--muted-fg);text-transform:uppercase">Ativo Agora</div></div>
 </div></div>`;
-h+=`<div class="card" style="margin-bottom:20px"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">👥 Supervisores Cadastrados</h4></div><div style="overflow-x:auto"><table><thead><tr><th>Nome</th><th>Pendências Abertas</th><th>Críticas</th><th>Status</th></tr></thead><tbody>`;
+h+=`<div class="card" style="margin-bottom:20px"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">👥 Supervisores Cadastrados</h4><p style="font-size:11px;color:var(--muted-fg);margin-top:6px">Marque para incluir no relatório todos os pontos <strong>deste supervisor</strong> (no filtro atual).</p></div><div style="overflow-x:auto"><table><thead><tr><th class="no-print" style="width:40px">Rel.</th><th>Nome</th><th>Pendências Abertas</th><th>Críticas</th><th>Status</th></tr></thead><tbody>`;
+relatorioEnsureSelectionDefaults();
 getSupervisores().forEach(n=>{const regs=pendencias.filter(p=>p.supervisor?.trim()===n&&p.status!=="Concluído");const cr=regs.filter(p=>p.prioridade==="critical").length;
-h+=`<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${getInitials(n)}</div><strong>${n}</strong></div></td><td>${regs.length}</td><td>${cr}</td><td><span class="status-pill ${supervisorSelecionado===n?"s-done":"s-postpone"}">${supervisorSelecionado===n?"Online":"Offline"}</span></td></tr>`});
+h+=`<tr><td class="no-print" style="text-align:center;vertical-align:middle"><input type="checkbox" title="Relatório: marcar tudo deste supervisor" ${relatorioSupTodosMarcados(n)?"checked":""} onchange='relatorioBulkSupervisor(${JSON.stringify(n)},this.checked)'></td><td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${getInitials(n)}</div><strong>${n}</strong></div></td><td>${regs.length}</td><td>${cr}</td><td><span class="status-pill ${supervisorSelecionado===n?"s-done":"s-postpone"}">${supervisorSelecionado===n?"Online":"Offline"}</span></td></tr>`});
 h+=`</tbody></table></div></div>`;
 h+=`<div class="card"><div style="padding:16px;border-bottom:1px solid var(--border)"><h4 style="font-size:13px;font-weight:700">📋 Log de Acessos</h4></div>`;
 if(acessos.length){h+=`<div style="overflow-x:auto"><table><thead><tr><th>Data/Hora</th><th>Supervisor</th><th>Ação</th></tr></thead><tbody>`;
@@ -899,94 +1082,148 @@ if(acessos.length){h+=`<div style="overflow-x:auto"><table><thead><tr><th>Data/H
 h+=`</tbody></table></div>`}else{h+=`<div style="padding:24px;text-align:center;color:var(--muted-fg);font-size:13px">Nenhum acesso registrado ainda. Selecione um supervisor para começar.</div>`}
 h+=`</div>`;return h}
 
-function showDetail(id){const p=pendencias.find(x=>x.id===id);if(!p)return;
-document.getElementById("detailContent").innerHTML=`
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700">📋 ${p.tag}</h3><button onclick="closeModal('detailModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>
-<div style="display:flex;flex-direction:column;gap:12px;font-size:13px">
-<div><label>DATA:</label> ${formatDataHoraExibicao(p.data)}</div><div><label>ÁREA:</label> ${p.area}</div><div><label>RESPONSÁVEL:</label> ${p.responsavel}</div><div><label>SUPERVISOR:</label> ${p.supervisor}</div><div><label>STATUS:</label> ${p.status}</div><div><label>PRIORIDADE:</label> ${prioLabel(p.prioridade)}</div>
-<hr style="border:none;border-top:1px solid var(--border)">
-<div><label>SITUAÇÃO (S):</label><p style="margin-top:4px">${p.situacao}</p></div>
-<div><label>BACKGROUND (B):</label><p style="margin-top:4px">${p.background}</p></div>
-<div><label>AVALIAÇÃO (A):</label><p style="margin-top:4px">${p.avaliacao}</p></div>
-<div><label>RECOMENDAÇÃO (R):</label><p style="margin-top:4px">${p.recomendacao}</p></div></div>`;
+function showDetail(id){const p=findPendenciaPorId(id);if(!p)return;
+const jc=mapCrit(p);
+const sid=JSON.stringify(id);
+document.getElementById("detailContent").innerHTML=
+'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700" id="detailTagTitle">📋</h3><button type="button" onclick="closeModal(\'detailModal\')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>'+
+'<div style="display:flex;flex-direction:column;gap:12px;font-size:13px" id="detailMeta"></div>'+
+'<hr style="border:none;border-top:1px solid var(--border)">'+
+'<div><label>SITUAÇÃO (S):</label><p style="margin-top:4px" id="detailSit"></p></div>'+
+'<div><label>BACKGROUND (B):</label><p style="margin-top:4px" id="detailBg"></p></div>'+
+'<div><label>AVALIAÇÃO (A):</label><p style="margin-top:4px" id="detailAva"></p></div>'+
+'<div><label>RECOMENDAÇÃO (R):</label><p style="margin-top:4px" id="detailRec"></p></div>'+
+'<div style="margin-top:12px"><button type="button" class="btn-primary" id="detailBtnEdit">Editar registro</button></div>';
+document.getElementById("detailTagTitle").textContent="📋 "+(p.tag||"");
+document.getElementById("detailMeta").innerHTML=
+"<div><label>Abertura do registro:</label> "+formatDataHoraExibicao(p.data)+"</div>"+
+"<div><label>Data início / Data final (período):</label> "+formatDataDMY(p.periodoInicial)+" → "+formatDataDMY(p.periodoFinal)+"</div>"+
+"<div><label>Horários (tarefa / execução):</label> "+formatHorarioLinha(p)+"</div>"+
+"<div><label>O.S.:</label> "+(p.os?escHtml(p.os):"—")+"</div>"+
+"<div><label>Janela de ataque:</label> "+critLabel(jc)+"</div>"+
+"<div><label>ÁREA:</label> "+escHtml(p.area||"")+"</div>"+
+"<div><label>RESPONSÁVEL:</label> "+escHtml(p.responsavel||"")+"</div>"+
+"<div><label>SUPERVISOR:</label> "+escHtml(p.supervisor||"")+"</div>"+
+"<div><label>STATUS:</label> "+escHtml(p.status||"")+"</div>"+
+"<div><label>PRIORIDADE:</label> "+prioLabel(p.prioridade)+"</div>";
+document.getElementById("detailSit").textContent=p.situacao||"";
+document.getElementById("detailBg").textContent=p.background||"";
+document.getElementById("detailAva").textContent=p.avaliacao||"";
+document.getElementById("detailRec").textContent=p.recomendacao||"";
+document.getElementById("detailBtnEdit").onclick=function(){closeModal("detailModal");openEdit(JSON.parse(sid))};
 openModal("detailModal")}
 
-function showAtvDetail(id){const a=atividades.find(x=>x.id===id);if(!a)return;
-document.getElementById("detailContent").innerHTML=`
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700">✅ ${a.tag}</h3><button onclick="closeModal('detailModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>
-<div style="display:flex;flex-direction:column;gap:12px;font-size:13px">
-<div><label>DATA:</label> ${formatDataHoraExibicao(a.data)}</div><div><label>ÁREA:</label> ${a.area}</div><div><label>TURNO:</label> ${a.turno} / ${a.letra||"-"}</div><div><label>SUPERVISOR:</label> ${a.supervisor}</div><div><label>O.S.:</label> ${a.os||"-"}</div><div><label>CRITICIDADE:</label> ${critLabel(a.criticidade)}</div>
-<hr style="border:none;border-top:1px solid var(--border)">
-<div><label>ATIVIDADE:</label><p style="margin-top:4px">${a.descricao}</p></div>
-<div><label>RESULTADO:</label><p style="margin-top:4px">${a.resultado||"-"}</p></div></div>`;
-openModal("detailModal")}
-
-function openEdit(id){const p=pendencias.find(x=>x.id===id);if(!p)return;
-if(supervisorSelecionado&&p.supervisor?.trim()!==supervisorSelecionado){showToast("Somente o supervisor responsável pode editar.","error");return}
-document.getElementById("editContent").innerHTML=`
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700">Editar ${p.tag}</h3><button onclick="closeModal('editModal')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div><label for="editStatus">Status</label><select id="editStatus" name="editStatus"><option ${p.status==="Aberto"?"selected":""}>Aberto</option><option ${p.status==="Em andamento"?"selected":""}>Em andamento</option><option ${p.status==="Monitoramento"?"selected":""}>Monitoramento</option><option ${p.status==="Concluído"?"selected":""}>Concluído</option></select></div>
-<div><label for="editPrio">Prioridade</label><select id="editPrio" name="editPrio"><option value="critical" ${p.prioridade==="critical"?"selected":""}>Crítico</option><option value="high" ${p.prioridade==="high"?"selected":""}>Alto</option><option value="medium" ${p.prioridade==="medium"?"selected":""}>Médio</option><option value="low" ${p.prioridade==="low"?"selected":""}>Baixo</option></select></div>
-<div><label for="editSit">Situação</label><textarea id="editSit" name="editSit">${p.situacao}</textarea></div>
-<div><label for="editRec">Recomendação</label><textarea id="editRec" name="editRec">${p.recomendacao}</textarea></div>
-</div>
-<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
-<button class="btn-outline" onclick="closeModal('editModal')">Cancelar</button>
-<button class="btn-primary" onclick="saveEdit('${id}')">Salvar</button></div>`;
+function openEdit(id){const p=findPendenciaPorId(id);if(!p){showToast("Registro não encontrado. Atualize a página.","error");return}
+const jc=mapCrit(p);
+const sid=JSON.stringify(id);
+document.getElementById("editContent").innerHTML=
+'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-size:18px;font-weight:700" id="editTitleTag">Editar</h3><button type="button" onclick="closeModal(\'editModal\')" style="border:none;background:none;font-size:24px;color:var(--muted-fg)">&times;</button></div>'+
+'<div class="form-grid">'+
+'<div><label for="editStatus">Status</label><select id="editStatus" name="editStatus"><option>Aberto</option><option>Em andamento</option><option>Monitoramento</option><option>Concluído</option></select></div>'+
+'<div><label for="editPrio">Prioridade</label><select id="editPrio" name="editPrio"><option value="critical">Crítico</option><option value="high">Alto</option><option value="medium">Médio</option><option value="low">Baixo</option></select></div>'+
+'<div><label for="editCrit">Janela de ataque</label><select id="editCrit" name="editCrit"><option value="imediato">Agir de imediato</option><option value="dia">Ao longo do dia</option><option value="postergar">Pode postergar</option></select></div>'+
+'<div><label for="editOS">O.S. / SAP</label><input type="text" id="editOS" name="editOS" autocomplete="off"></div>'+
+'<div><label for="editPeriodoI">Período inicial</label><input type="date" id="editPeriodoI" name="editPeriodoI"></div>'+
+'<div><label for="editPeriodoF">Período final</label><input type="date" id="editPeriodoF" name="editPeriodoF"></div>'+
+'<div><label for="editHoraIniT">Início tarefa</label><input type="time" id="editHoraIniT" name="editHoraIniT"></div>'+
+'<div><label for="editHoraFimT">Fim tarefa</label><input type="time" id="editHoraFimT" name="editHoraFimT"></div>'+
+'<div><label for="editHoraIniExec">Início execução</label><input type="time" id="editHoraIniExec" name="editHoraIniExec"></div>'+
+'<div><label for="editHoraFimExec">Fim execução</label><input type="time" id="editHoraFimExec" name="editHoraFimExec"></div>'+
+'<div><label for="editResp">Responsável</label><input type="text" id="editResp" name="editResp" autocomplete="off"></div>'+
+'<div><label for="editSup">Supervisor</label><input type="text" id="editSup" name="editSup" autocomplete="off"></div>'+
+'</div>'+
+'<div style="margin-top:14px;display:flex;flex-direction:column;gap:12px">'+
+'<div><label for="editSit">Situação</label><textarea id="editSit" name="editSit"></textarea></div>'+
+'<div><label for="editBg">Background</label><textarea id="editBg" name="editBg"></textarea></div>'+
+'<div><label for="editAva">Avaliação</label><textarea id="editAva" name="editAva"></textarea></div>'+
+'<div><label for="editRec">Recomendação</label><textarea id="editRec" name="editRec"></textarea></div>'+
+'</div>'+
+'<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">'+
+'<button type="button" class="btn-outline" onclick="closeModal(\'editModal\')">Cancelar</button>'+
+'<button type="button" class="btn-primary" id="editBtnSave">Salvar</button></div>';
+document.getElementById("editTitleTag").textContent="Editar "+(p.tag||"");
+document.getElementById("editStatus").value=p.status||"Aberto";
+document.getElementById("editPrio").value=p.prioridade||"medium";
+document.getElementById("editCrit").value=jc;
+document.getElementById("editOS").value=p.os||"";
+document.getElementById("editPeriodoI").value=p.periodoInicial||"";
+document.getElementById("editPeriodoF").value=p.periodoFinal||"";
+document.getElementById("editHoraIniT").value=p.horaInicioTarefa||"";
+document.getElementById("editHoraFimT").value=p.horaFimTarefa||"";
+document.getElementById("editHoraIniExec").value=p.horaInicioExec||"";
+document.getElementById("editHoraFimExec").value=p.horaFimExec||"";
+document.getElementById("editResp").value=p.responsavel||"";
+document.getElementById("editSup").value=p.supervisor||"";
+document.getElementById("editSit").value=p.situacao||"";
+document.getElementById("editBg").value=p.background||"";
+document.getElementById("editAva").value=p.avaliacao||"";
+document.getElementById("editRec").value=p.recomendacao||"";
+document.getElementById("editBtnSave").onclick=function(){saveEdit(JSON.parse(sid))};
 openModal("editModal")}
 
-function saveEdit(id){const idx=pendencias.findIndex(p=>p.id===id);if(idx<0)return;
+function saveEdit(id){const idx=pendencias.findIndex(p=>String(p.id)===String(id));if(idx<0){showToast("Registro não encontrado.","error");return}
 pendencias[idx].status=document.getElementById("editStatus").value;
 pendencias[idx].prioridade=document.getElementById("editPrio").value;
+pendencias[idx].criticidade=document.getElementById("editCrit").value;
+pendencias[idx].os=document.getElementById("editOS").value||"";
+pendencias[idx].periodoInicial=document.getElementById("editPeriodoI").value||"";
+pendencias[idx].periodoFinal=document.getElementById("editPeriodoF").value||"";
+pendencias[idx].horaInicioTarefa=document.getElementById("editHoraIniT").value||"";
+pendencias[idx].horaFimTarefa=document.getElementById("editHoraFimT").value||"";
+pendencias[idx].horaInicioExec=document.getElementById("editHoraIniExec").value||"";
+pendencias[idx].horaFimExec=document.getElementById("editHoraFimExec").value||"";
+pendencias[idx].responsavel=document.getElementById("editResp").value||"";
+pendencias[idx].supervisor=document.getElementById("editSup").value||"";
 pendencias[idx].situacao=document.getElementById("editSit").value;
+pendencias[idx].background=document.getElementById("editBg").value;
+pendencias[idx].avaliacao=document.getElementById("editAva").value;
 pendencias[idx].recomendacao=document.getElementById("editRec").value;
 closeModal("editModal");salvar();render();showToast("Atualizado com sucesso!","success")}
 
 function populateAreaSelects(){const areas=Object.keys(equipamentosPorArea).sort();
-["pArea","aArea"].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;const v=sel.value;sel.innerHTML='<option value="">Selecione</option>'+areas.map(a=>`<option>${a}</option>`).join("");sel.value=v})}
+const sel=document.getElementById("pArea");if(!sel)return;const v=sel.value;sel.innerHTML='<option value="">Selecione</option>'+areas.map(a=>`<option>${a}</option>`).join("")+'<option value="__OUTRO_AREA__">— Outro (especificar área) —</option>';if([...sel.options].some(o=>o.value===v))sel.value=v}
 
 function updateTags(prefix){const area=document.getElementById(prefix+"Area").value;const tagSel=document.getElementById(prefix+"Tag");
+const prev=tagSel.value;
 tagSel.innerHTML='<option value="">Selecione</option>';
-if(area&&equipamentosPorArea[area])equipamentosPorArea[area].sort().forEach(t=>{tagSel.innerHTML+=`<option>${t}</option>`})}
+if(area&&area!=="__OUTRO_AREA__"&&equipamentosPorArea[area])equipamentosPorArea[area].sort().forEach(t=>{tagSel.innerHTML+=`<option>${t}</option>`});
+tagSel.innerHTML+='<option value="__OUTRO__">— Outro (especificar) —</option>';
+if([...tagSel.options].some(o=>o.value===prev))tagSel.value=prev;
+toggleTagOutro(prefix)}
 
-function submitPendencia(e){e.preventDefault();const area=document.getElementById("pArea").value;const tag=document.getElementById("pTag").value;if(!area||!tag)return;
+function submitPendencia(e){e.preventDefault();
+let area=document.getElementById("pArea").value;
+if(area==="__OUTRO_AREA__"){area=(document.getElementById("pAreaOutro").value||"").trim();if(!area){showToast("Informe a área ou escolha na lista.","error");return}}
+let tag=document.getElementById("pTag").value;
+if(tag==="__OUTRO__"){tag=(document.getElementById("pTagOutro").value||"").trim();if(!tag){showToast("Informe o equipamento/TAG ou escolha na lista.","error");return}}
+if(!area||!tag)return;
 const sup=document.getElementById("pSupervisor").value||supervisorSelecionado||"";
-pendencias.unshift({id:`${tag}-${Date.now()}`,tag,area,situacao:document.getElementById("pSituacao").value,background:document.getElementById("pBackground").value,avaliacao:document.getElementById("pAvaliacao").value,recomendacao:document.getElementById("pRecomendacao").value,prioridade:document.getElementById("pPrioridade").value,status:"Aberto",responsavel:document.getElementById("pResponsavel").value,data:(function(){const n=new Date();return n.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});})(),turno:document.getElementById("pTurno").value,supervisor:sup,letra:document.getElementById("pLetra").value,periodoInicial:document.getElementById("pPeriodoI").value,periodoFinal:document.getElementById("pPeriodoF").value});
-closeModal("newPendencia");e.target.reset();salvar();render();showToast("Pendência registrada!","success")}
-
-function submitAtividade(e){e.preventDefault();const area=document.getElementById("aArea").value;const tag=document.getElementById("aTag").value;if(!area||!tag)return;
-const sup=document.getElementById("aSupervisor").value||supervisorSelecionado||"";
-const dt=document.getElementById("aData").value||new Date().toISOString().slice(0,10);const hr=document.getElementById("aHora").value||"00:00";
-atividades.unshift({id:`ATV-${Date.now()}`,data:`${dt} ${hr}`,area,turno:document.getElementById("aTurno").value,letra:document.getElementById("aLetra").value,supervisor:sup,tag,criticidade:document.getElementById("aCriticidade").value,descricao:document.getElementById("aDescricao").value,resultado:document.getElementById("aResultado").value,os:document.getElementById("aOS").value,status:"Concluído"});
-closeModal("newAtividade");e.target.reset();salvar();render();showToast("Atividade registrada!","success")}
+pendencias.unshift({id:`${tag}-${Date.now()}`,tag,area,situacao:document.getElementById("pSituacao").value,background:document.getElementById("pBackground").value,avaliacao:document.getElementById("pAvaliacao").value,recomendacao:document.getElementById("pRecomendacao").value,prioridade:document.getElementById("pPrioridade").value,criticidade:document.getElementById("pCriticidade").value,os:document.getElementById("pOS").value||"",status:"Aberto",responsavel:document.getElementById("pResponsavel").value,data:(function(){const n=new Date();return n.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});})(),horaInicioTarefa:document.getElementById("pHoraIniT").value||"",horaFimTarefa:document.getElementById("pHoraFimT").value||"",horaInicioExec:document.getElementById("pHoraIniExec").value||"",horaFimExec:document.getElementById("pHoraFimExec").value||"",turno:document.getElementById("pTurno").value,supervisor:sup,letra:document.getElementById("pLetra").value,periodoInicial:document.getElementById("pPeriodoI").value,periodoFinal:document.getElementById("pPeriodoF").value});
+closeModal("newPendencia");e.target.reset();document.getElementById("pTagOutroRow").style.display="none";document.getElementById("pAreaOutroRow").style.display="none";salvar();render();showToast("Ponto registrado!","success")}
 
 function exportarBackup(){const blob=new Blob([JSON.stringify({pendencias,atividades,ordens},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`backup_turno_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);showToast("Backup exportado!","success")}
 
-function importarBackup(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.pendencias)pendencias=d.pendencias;if(d.atividades)atividades=d.atividades;if(d.ordens)ordens=d.ordens;salvar();render();showToast("Backup importado!","success")}catch(err){showToast("Erro ao importar.","error")}};reader.readAsText(file);e.target.value=""}
+function importarBackup(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.pendencias)pendencias=d.pendencias;if(d.atividades)atividades=d.atividades;if(d.ordens)ordens=d.ordens;migrarAtividadesLegado();salvar();render();showToast("Backup importado!","success")}catch(err){showToast("Erro ao importar.","error")}};reader.readAsText(file);e.target.value=""}
 
 function render(){
 document.getElementById("screenDate").textContent=new Date().toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"})+" • Atualizado em tempo real";
+if(!screenTitles[activeScreen])activeScreen="sbar";
+document.querySelectorAll("#navMenu button").forEach(b=>b.classList.toggle("active",b.dataset.screen===activeScreen));
+document.getElementById("screenTitle").textContent=screenTitles[activeScreen]||activeScreen;
+const tg=document.getElementById("screenTagline");if(tg)tg.style.display=activeScreen==="sbar"?"block":"none";
 renderFilters();updateSidebarCard();
 const c=document.getElementById("screenContent");
 switch(activeScreen){
-case"dashboard":c.innerHTML=renderDashboard();break;
-case"onepage":c.innerHTML=renderOnePage();break;
-case"atividades":c.innerHTML=renderAtividades();break;
 case"sbar":c.innerHTML=renderSBAR();break;
-case"kanban":c.innerHTML=renderKanban();break;
-case"oee":c.innerHTML=renderOEE();break;
-case"historico":c.innerHTML=renderLogbook();break;
-case"documentos":c.innerHTML=renderDocumentos();break;
 case"relatorio":c.innerHTML=renderRelatorio();break;
 case"acesso":c.innerHTML=renderAcesso();break;
-default:c.innerHTML=renderDashboard()}}
+default:c.innerHTML=renderSBAR()}}
 
 // Responsive
 function checkMobile(){const mb=window.innerWidth<1024;document.getElementById("menuBtn").style.display=mb?"inline-flex":"none"}
 
 // Init
-carregar();buildNav();checkMobile();render();
+carregar();migrarAtividadesLegado();buildNav();checkMobile();bindPendenciaEditDelegation();render();
 initFirebaseAuth();
 window.addEventListener("resize",checkMobile);
 </script>
